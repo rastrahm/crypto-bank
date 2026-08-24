@@ -12,6 +12,15 @@ Vault multi-activo (ETH + ERC-20) con ledger interno, pausa de emergencia, CEI y
 
 Ver [`doc/00-plan-implementacion.md`](doc/00-plan-implementacion.md).
 
+Seguridad:
+
+- [`doc/SWC-AUDIT.md`](doc/SWC-AUDIT.md) — matriz SWC-100–136
+- [`doc/ATAQUES.md`](doc/ATAQUES.md) — campañas defensivas A–E
+
+```shell
+forge test --match-test test_Attack
+```
+
 ## Uso rápido
 
 ```shell
