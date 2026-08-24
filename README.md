@@ -32,6 +32,18 @@ frontend/      # Next.js (Fase 4)
 doc/           # Plan y diagramas
 ```
 
+## Deploy (Fase 3)
+
+Ver playbook completo: [`doc/DEPLOY.md`](doc/DEPLOY.md).
+
+```shell
+anvil   # terminal A
+forge script script/Deploy.s.sol:Deploy --rpc-url http://127.0.0.1:8545 \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
+./script/export-abi.sh
+```
+
 ## Entorno
 
-Copia `.env.example` a `.env` y completa `PRIVATE_KEY` / `RPC_URL` cuando vayas a desplegar (Fase 3).
+Copia `.env.example` a `.env` para scripts Foundry.  
+Frontend: `frontend/.env.example` → `.env.local` con las addresses del deploy.

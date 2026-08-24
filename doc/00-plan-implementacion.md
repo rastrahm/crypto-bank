@@ -252,7 +252,7 @@ Diagramas detallados:
 [x] Fase 0  Bootstrap Foundry
 [x] Fase 1  Diseño + tests iniciales (TDD)
 [x] Fase 2  Vault completo + reentrancy/fuzz/invariant
-[ ] Fase 3  Deploy scripts + ABI export
+[x] Fase 3  Deploy scripts + ABI export
 [ ] Fase 4  Frontend Next.js + ethers v6
 [ ] Fase 5  Deploy VPS Google
 [ ] Fase 6  Docs finales + handoff
