@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -12,8 +12,10 @@ import {ICryptoBankVault} from "./interfaces/ICryptoBankVault.sol";
 
 /// @title CryptoBankVault
 /// @notice Vault bancario descentralizado con ledger interno para ETH y ERC-20.
-/// @dev Aplica CEI, `ReentrancyGuard`, `Pausable` y `Ownable2Step`. ETH solo con `.call{value}("")`.
-contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, ReentrancyGuard {
+/// @dev CEI + `ReentrancyGuardTransient` (EIP-1153) + `Pausable` + `Ownable2Step`.
+/// @dev Gas: subtract `unchecked` tras check; sin delta `balanceOf` en ERC-20 (solo tokens honestos);
+///      pause chequeado una sola vez en `receive`; `msg.sender` cacheado en paths calientes.
+contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     // ============ Errors ============
@@ -24,10 +26,10 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
     /// @dev El saldo del ledger del usuario es insuficiente para el retiro.
     error InsufficientVaultBalance();
 
-    /// @dev Falló la transferencia nativa ETH (`.call`) o el movimiento de tokens.
+    /// @dev Falló la transferencia nativa ETH (`.call`).
     error TransferFailed();
 
-    /// @dev Falló el depósito ERC-20 (`transferFrom` / shortfall).
+    /// @dev Falló el depósito ERC-20 (reservado / shortfall de tokens no estándar).
     error DepositFailed();
 
     /// @dev Se usó `address(0)` donde se esperaba un ERC-20, o un token inválido.
@@ -50,6 +52,7 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
     // ============ Constants ============
 
     /// @notice Sentinel para ETH nativo en el ledger (`balances[user][NATIVE]`).
+    /// @dev `constant` se inlinea en bytecode (sin SLOAD).
     address public constant NATIVE = address(0);
 
     // ============ State ============
@@ -66,19 +69,23 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
     // ============ Receive ============
 
     /// @notice Acepta ETH directo y lo acredita como depósito del `msg.sender`.
-    /// @dev Equivalente a `depositETH()`; respeta pausa y `msg.value > 0`.
+    /// @dev Equivalente a `depositETH()`; el check de pausa vive aquí (no hay modifier en `receive`).
     receive() external payable {
-        _depositETH(msg.sender, msg.value);
+        if (paused()) {
+            revert EnforcedPause();
+        }
+        _creditNative(msg.sender, msg.value);
     }
 
     // ============ External ============
 
     /// @inheritdoc ICryptoBankVault
     function depositETH() external payable whenNotPaused {
-        _depositETH(msg.sender, msg.value);
+        _creditNative(msg.sender, msg.value);
     }
 
     /// @inheritdoc ICryptoBankVault
+    /// @dev Asume ERC-20 honestos (sin fee-on-transfer). No se hacen `balanceOf` extra a propósito (gas).
     function depositERC20(address token, uint256 amount) external whenNotPaused nonReentrant {
         if (token == NATIVE) {
             revert InvalidToken();
@@ -87,18 +94,15 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
             revert ZeroAmount();
         }
 
+        address account = msg.sender;
+
         // Effects
-        _balances[msg.sender][token] += amount;
+        _balances[account][token] += amount;
 
         // Interactions
-        uint256 beforeBal = IERC20(token).balanceOf(address(this));
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        uint256 received = IERC20(token).balanceOf(address(this)) - beforeBal;
-        if (received != amount) {
-            revert DepositFailed();
-        }
+        IERC20(token).safeTransferFrom(account, address(this), amount);
 
-        emit Deposited(msg.sender, token, amount);
+        emit Deposited(account, token, amount);
     }
 
     /// @inheritdoc ICryptoBankVault
@@ -107,21 +111,24 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
             revert ZeroAmount();
         }
 
-        uint256 bal = _balances[msg.sender][NATIVE];
+        address account = msg.sender;
+        uint256 bal = _balances[account][NATIVE];
         if (bal < amount) {
             revert InsufficientVaultBalance();
         }
 
-        // Effects
-        _balances[msg.sender][NATIVE] = bal - amount;
+        // Effects — `unchecked` seguro: `bal >= amount` ya verificado.
+        unchecked {
+            _balances[account][NATIVE] = bal - amount;
+        }
 
         // Interactions
-        (bool ok,) = msg.sender.call{value: amount}("");
+        (bool ok,) = account.call{value: amount}("");
         if (!ok) {
             revert TransferFailed();
         }
 
-        emit Withdrawn(msg.sender, NATIVE, amount);
+        emit Withdrawn(account, NATIVE, amount);
     }
 
     /// @inheritdoc ICryptoBankVault
@@ -133,18 +140,21 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
             revert ZeroAmount();
         }
 
-        uint256 bal = _balances[msg.sender][token];
+        address account = msg.sender;
+        uint256 bal = _balances[account][token];
         if (bal < amount) {
             revert InsufficientVaultBalance();
         }
 
         // Effects
-        _balances[msg.sender][token] = bal - amount;
+        unchecked {
+            _balances[account][token] = bal - amount;
+        }
 
         // Interactions
-        IERC20(token).safeTransfer(msg.sender, amount);
+        IERC20(token).safeTransfer(account, amount);
 
-        emit Withdrawn(msg.sender, token, amount);
+        emit Withdrawn(account, token, amount);
     }
 
     /// @inheritdoc ICryptoBankVault
@@ -166,14 +176,10 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
 
     // ============ Internal ============
 
-    /// @dev Acredita ETH en el ledger. Usado por `depositETH` y `receive`.
-    function _depositETH(address user, uint256 amount) internal {
+    /// @dev Acredita ETH en el ledger. Caller debe haber validado `!paused` (`whenNotPaused` o check en `receive`).
+    function _creditNative(address user, uint256 amount) internal {
         if (amount == 0) {
             revert ZeroAmount();
-        }
-        // `receive` no puede usar `whenNotPaused` en la firma; se chequea aquí.
-        if (paused()) {
-            revert EnforcedPause();
         }
 
         _balances[user][NATIVE] += amount;
