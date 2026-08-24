@@ -249,7 +249,7 @@ Diagramas detallados:
 ## 6. Orden de trabajo recomendado (checklist)
 
 ```text
-[ ] Fase 0  Bootstrap Foundry
+[x] Fase 0  Bootstrap Foundry
 [ ] Fase 1  Diseño + tests iniciales (TDD)
 [ ] Fase 2  Vault completo + reentrancy/fuzz/invariant
 [ ] Fase 3  Deploy scripts + ABI export
