@@ -1,0 +1,33 @@
+# .cursorrules — Module 02: Crypto Bank Vault
+
+## MODULE OVERVIEW
+Focus on building a secure, gas-optimized decentralized banking vault supporting ETH and ERC-20 deposits, accounting tracking, emergency pause controls, and strict reentrancy protection.
+
+---
+
+## 1. TECHNICAL CONSTRAINTS & STACK
+
+- **Compiler Version:** Strictly `pragma solidity 0.8.24;` (no floating pragmas).
+- **Tooling:** Foundry (`forge` for testing, invariant checking, and gas reporting).
+- **Core Features:**
+  - Multi-asset vaults (Native ETH & ERC-20 token tracking).
+  - Internal ledger accounting per user (`mapping(address => mapping(address => uint256))`).
+  - Checks-Effects-Interactions (CEI) pattern enforced on all withdrawal routines.
+  - Native ETH transfers strictly using `.call{value: ...}("")` with full success checking.
+
+---
+
+## 2. CODING & SECURITY RULES
+
+- **Reentrancy Protection:** Implement a custom transient/uint256 `ReentrancyGuard` or strict CEI state updates prior to external calls.
+- **Custom Errors:** Use custom errors (`error DepositFailed()`, `error TransferFailed()`, `error InsufficientVaultBalance()`, `error ZeroAmount()`) instead of verbose `require()` strings.
+- **Access Control & Emergency Pause:** Lightweight administrative controls (`Ownable2Step` pattern or explicit owner role) to pause deposits/withdrawals under emergency state.
+- **State Updates:** Update user and vault balances in state BEFORE attempting native ETH `.call` or ERC-20 `transfer`/`transferFrom`.
+
+---
+
+## 3. TESTING REQUIREMENTS
+
+- **Unit Tests:** Verify deposit/withdrawal logic for both ETH (`receive`/`fallback`) and ERC-20 tokens.
+- **Reentrancy Attack Tests:** Create a malicious receiver contract attempting recursive withdrawals to validate reentrancy protection.
+- **Fuzzing Tests:** Apply property-based fuzzing on deposit/withdrawal amounts using `bound()` and invariant testing on vault balance totals.
