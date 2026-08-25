@@ -51,7 +51,9 @@ contract CryptoBankVaultInvariantTest is StdInvariant, Test {
         assertGe(token.balanceOf(address(vault)), handler.ghostTokenSum());
         assertEq(handler.ghostTokenSum(), _sumTokenLedger());
         assertEq(vault.totalBalance(address(token)), handler.ghostTokenSum());
-        assertEq(token.balanceOf(address(vault)), vault.totalBalance(address(token)) + vault.surplusERC20(address(token)));
+        assertEq(
+            token.balanceOf(address(vault)), vault.totalBalance(address(token)) + vault.surplusERC20(address(token))
+        );
     }
 
     /// @notice Sin ETH forzado en el handler: surplus nativo permanece 0.
