@@ -35,6 +35,9 @@ Auditoría: [`SWC-AUDIT.md`](./SWC-AUDIT.md)
 | A7 | `depositERC20(address(0))` | `InvalidToken` | `test_AttackA7_*` |
 | A8 | Receptor que rechaza ETH | `TransferFailed` | `test_AttackA8_*` |
 | A9 | No-owner llama `pause` | revert Ownable | `test_AttackA9_*` |
+| A10 | Fee-on-transfer no infla ledger | ledger == balance recibido | `test_AttackA10_*` |
+| A11 | Depósito ERC-20 no allowlisted | `TokenNotAllowed` | `test_AttackA11_*` |
+| A12 | Rescue no drena ledger | `RescueExceedsSurplus` | `test_AttackA12_*` |
 
 ---
 
@@ -89,7 +92,7 @@ A diferencia del token puro del módulo 01, el vault **sí** maneja ETH y **sí*
 |---|-----------|------|
 | E1 | Reentrancy en `withdrawETH` no drena | `test_AttackE1_*` (alias del test attack) |
 | E2 | ETH forzado no aumenta ledger | `test_AttackE2_*` |
-| E3 | Sin `selfdestruct` / `delegatecall` en fuente | `test_AttackE3_*` |
+| E3 | Sin `SELFDESTRUCT` / `DELEGATECALL` en bytecode runtime | `test_AttackE3_*` |
 | E4 | Pause bloquea depósito vía `receive` | `test_AttackE4_*` |
 
 ---

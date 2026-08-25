@@ -7,7 +7,7 @@
 | `ReentrancyGuardTransient` (EIP-1153) | Requiere EVM Cancun+ (`evm_version = "cancun"`) | Guard más barato (transient vs storage) |
 | `unchecked` en restas de ledger tras `bal >= amount` | Solo válido si el check previo se mantiene | Ahorra gas del overflow check en subtract |
 | Cache de `msg.sender` en paths de deposit/withdraw | Ninguno | Menos opcodes `CALLER` repetidos |
-| Sin `balanceOf` before/after en `depositERC20` | **Solo ERC-20 honestos** (sin fee-on-transfer) | Elimina 2 calls externos por depósito |
+| Sin `balanceOf` before/after en `depositERC20` | **Obsoleto (Fase fee-aware):** ahora se mide delta | Ver sección siguiente |
 | Pause una sola vez (`whenNotPaused` / check en `receive`) | `_creditNative` asume caller ya validó pausa | Evita SLOAD duplicado de `paused` |
 | Custom errors (ya en Fase 1) | — | Más barato que `require` con string |
 
@@ -28,6 +28,10 @@ Medido con `forge test --match-contract CryptoBankVaultTest --gas-report`.
 
 ## Fuera de alcance (no optimizado a propósito)
 
-- Tokens fee-on-transfer / rebase: no soportados en v1.
+- Fee-on-transfer en **retiro** y tokens rebase / `balanceOf` mentiroso allowlisted: ver [`LIMITACIONES.md`](./LIMITACIONES.md).
 - Assembly en `.call` ETH: ahorro marginal vs legibilidad.
 - Packing extra de storage: el ledger ya es un mapping anidado (slot por user+token).
+
+## Fee-on-transfer en depósito (mitigado)
+
+`depositERC20` hace `balanceOf` before/after y acredita solo el delta. Coste: ~2 calls externos extra por depósito vs Fase 2 “honest only”. Tradeoff aceptado para evitar insolvencia contable. El **retiro** no re-mide el delta (limitación documentada).

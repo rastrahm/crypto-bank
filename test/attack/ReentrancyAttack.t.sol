@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import {Test} from "forge-std/Test.sol";
 
 import {CryptoBankVault} from "../../src/CryptoBankVault.sol";
+import {ICryptoBankVault} from "../../src/interfaces/ICryptoBankVault.sol";
 import {ReentrancyAttacker} from "./ReentrancyAttacker.sol";
 
 /// @title ReentrancyAttackTest
@@ -37,7 +38,7 @@ contract ReentrancyAttackTest is Test {
 
         // Inner `withdrawETH` revierte por guard → `receive` revierte → `.call` retorna false
         // → el vault hace `revert TransferFailed()` y deshace el retiro externo.
-        vm.expectRevert(CryptoBankVault.TransferFailed.selector);
+        vm.expectRevert(ICryptoBankVault.TransferFailed.selector);
         attacker.triggerWithdraw();
 
         assertEq(address(vault).balance, 15 ether);

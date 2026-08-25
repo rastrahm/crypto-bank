@@ -21,6 +21,9 @@ contract CryptoBankVaultFuzzTest is Test {
         vault = new CryptoBankVault(owner);
         token = new MockERC20("Mock USD", "mUSD");
 
+        vm.prank(owner);
+        vault.setTokenAllowed(address(token), true);
+
         vm.deal(user, 1000 ether);
         token.mint(user, 1_000_000 ether);
     }

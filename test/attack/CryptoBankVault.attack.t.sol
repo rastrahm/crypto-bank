@@ -6,7 +6,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import {CryptoBankVault} from "../../src/CryptoBankVault.sol";
+import {ICryptoBankVault} from "../../src/interfaces/ICryptoBankVault.sol";
 import {MockERC20} from "../../src/mocks/MockERC20.sol";
+import {MockFeeOnTransferERC20} from "../../src/mocks/MockFeeOnTransferERC20.sol";
 import {ReentrancyAttacker} from "./ReentrancyAttacker.sol";
 
 /// @dev Receptor que rechaza ETH (para forzar fallo del `.call` en withdraw).
@@ -43,6 +45,9 @@ contract CryptoBankVaultAttackTest is Test {
         vault = new CryptoBankVault(owner);
         token = new MockERC20("Mock USD", "mUSD");
 
+        vm.prank(owner);
+        vault.setTokenAllowed(address(token), true);
+
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
         token.mint(alice, 1_000_000 ether);
@@ -56,13 +61,13 @@ contract CryptoBankVaultAttackTest is Test {
         vault.depositETH{value: 1 ether}();
 
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawETH(1 ether + 1);
     }
 
     function test_AttackA2_WithdrawETH_WithoutDeposit() public {
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawETH(1 wei);
     }
 
@@ -89,7 +94,7 @@ contract CryptoBankVaultAttackTest is Test {
         vault.depositETH{value: 3 ether}();
 
         vm.prank(bob);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawETH(1 ether);
 
         assertEq(vault.balanceOf(alice, address(0)), 3 ether);
@@ -100,15 +105,63 @@ contract CryptoBankVaultAttackTest is Test {
         vm.startPrank(alice);
         token.approve(address(vault), 2 ether);
         vault.depositERC20(address(token), 2 ether);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawERC20(address(token), 3 ether);
         vm.stopPrank();
     }
 
     function test_AttackA7_DepositERC20_NativeSentinelRejected() public {
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.InvalidToken.selector);
+        vm.expectRevert(ICryptoBankVault.InvalidToken.selector);
         vault.depositERC20(address(0), 1 ether);
+    }
+
+    /// @notice Fee-on-transfer: el ledger no puede acreditar más de lo que el vault recibe (anti-insolvencia).
+    function test_AttackA10_FeeOnTransfer_DoesNotInflateLedger() public {
+        MockFeeOnTransferERC20 tax = new MockFeeOnTransferERC20("Tax", "TAX", 2_000); // 20%
+        tax.mint(alice, 50 ether);
+
+        vm.prank(owner);
+        vault.setTokenAllowed(address(tax), true);
+
+        vm.startPrank(alice);
+        tax.approve(address(vault), 50 ether);
+        vault.depositERC20(address(tax), 50 ether);
+        vm.stopPrank();
+
+        uint256 ledger = vault.balanceOf(alice, address(tax));
+        uint256 held = tax.balanceOf(address(vault));
+        assertEq(ledger, 40 ether);
+        assertEq(held, 40 ether);
+        assertGe(held, ledger);
+    }
+
+    function test_AttackA11_DepositERC20_NotAllowlisted() public {
+        MockERC20 rogue = new MockERC20("Rogue", "ROG");
+        rogue.mint(alice, 10 ether);
+
+        vm.startPrank(alice);
+        rogue.approve(address(vault), 10 ether);
+        vm.expectRevert(ICryptoBankVault.TokenNotAllowed.selector);
+        vault.depositERC20(address(rogue), 10 ether);
+        vm.stopPrank();
+    }
+
+    function test_AttackA12_RescueCannotDrainLedger() public {
+        vm.prank(alice);
+        vault.depositETH{value: 5 ether}();
+
+        new EthForcedSender{value: 2 ether}(payable(address(vault)));
+
+        vm.prank(owner);
+        vault.rescueETH(owner, 2 ether);
+
+        vm.prank(owner);
+        vm.expectRevert(ICryptoBankVault.RescueExceedsSurplus.selector);
+        vault.rescueETH(owner, 1);
+
+        assertEq(vault.balanceOf(alice, address(0)), 5 ether);
+        assertEq(address(vault).balance, 5 ether);
     }
 
     function test_AttackA8_WithdrawETH_RejectingReceiver() public {
@@ -119,7 +172,7 @@ contract CryptoBankVaultAttackTest is Test {
         vault.depositETH{value: 2 ether}();
 
         vm.prank(address(rejector));
-        vm.expectRevert(CryptoBankVault.TransferFailed.selector);
+        vm.expectRevert(ICryptoBankVault.TransferFailed.selector);
         vault.withdrawETH(1 ether);
 
         assertEq(vault.balanceOf(address(rejector), address(0)), 2 ether);
@@ -200,7 +253,7 @@ contract CryptoBankVaultAttackTest is Test {
         vm.startPrank(alice);
         vault.withdrawETH(4 ether);
         vault.withdrawETH(6 ether);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawETH(1 wei);
         vm.stopPrank();
 
@@ -219,7 +272,7 @@ contract CryptoBankVaultAttackTest is Test {
         vm.prank(address(attacker));
         vault.depositETH{value: 5 ether}();
 
-        vm.expectRevert(CryptoBankVault.TransferFailed.selector);
+        vm.expectRevert(ICryptoBankVault.TransferFailed.selector);
         attacker.triggerWithdraw();
 
         assertEq(address(vault).balance, 15 ether);
@@ -239,11 +292,10 @@ contract CryptoBankVaultAttackTest is Test {
         assertGe(address(vault).balance, vault.balanceOf(alice, address(0)));
     }
 
-    function test_AttackE3_NoSelfdestructOrDelegatecallInSource() public {
-        string memory src = vm.readFile("src/CryptoBankVault.sol");
-        assertFalse(_contains(src, "selfdestruct"));
-        assertFalse(_contains(src, "delegatecall"));
-        assertFalse(_contains(src, "suicide("));
+    function test_AttackE3_RuntimeBytecodeHasNoSelfdestructOrDelegatecall() public view {
+        bytes memory code = address(vault).code;
+        assertFalse(_bytecodeContainsOpcode(code, 0xff)); // SELFDESTRUCT
+        assertFalse(_bytecodeContainsOpcode(code, 0xf4)); // DELEGATECALL
     }
 
     function test_AttackE4_PauseBlocksDepositAndReceive() public {
@@ -261,23 +313,21 @@ contract CryptoBankVaultAttackTest is Test {
         assertEq(address(vault).balance, 0);
     }
 
-    function _contains(string memory data, string memory needle) internal pure returns (bool) {
-        bytes memory d = bytes(data);
-        bytes memory n = bytes(needle);
-        if (n.length == 0 || n.length > d.length) {
-            return false;
-        }
-        uint256 end = d.length - n.length;
-        for (uint256 i = 0; i <= end; ++i) {
-            bool found = true;
-            for (uint256 j = 0; j < n.length; ++j) {
-                if (d[i + j] != n[j]) {
-                    found = false;
-                    break;
-                }
+    /// @dev Escanea bytecode runtime saltando immediates de PUSH1–PUSH32 (barato vs leer el .sol).
+    function _bytecodeContainsOpcode(bytes memory code, bytes1 op) internal pure returns (bool) {
+        uint256 i = 0;
+        while (i < code.length) {
+            bytes1 b = code[i];
+            if (b >= 0x60 && b <= 0x7f) {
+                uint256 pushLen = uint8(b) - 0x5f;
+                i += 1 + pushLen;
+                continue;
             }
-            if (found) {
+            if (b == op) {
                 return true;
+            }
+            unchecked {
+                ++i;
             }
         }
         return false;

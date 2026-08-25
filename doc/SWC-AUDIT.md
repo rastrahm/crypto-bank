@@ -15,10 +15,10 @@ Verificación de `CryptoBankVault` contra el [SWC Registry](https://swcregistry.
 | Estado | Cantidad |
 |--------|----------|
 | ✅ Mitigado / No aplicable | 34 |
-| ⚠️ Informativo (diseño / estándar) | 3 |
+| ⚠️ Informativo (diseño / estándar) | 1 |
 | ❌ Vulnerable | 0 |
 
-**Conclusión:** Sin vulnerabilidades SWC explotables en el alcance del vault. Ítems informativos: race de `approve` ERC-20 externo (SWC-114), tokens no estándar (fee-on-transfer), y ETH forzado al contrato (solvencia ≥ ledger se mantiene).
+**Conclusión:** Sin vulnerabilidades SWC explotables en el alcance del vault. Ítem informativo: race de `approve` ERC-20 externo (SWC-114; frontend ya hace approve 0→N). Fee-on-transfer + allowlist + rescue de surplus cubiertos.
 
 **Fuera de superficie del vault:** EIP-2612 / permit / malleabilidad de firmas / replay de permit — el vault **no** implementa `permit`; esas campañas del módulo ERC-20 son **N/A** aquí (ver [`ATAQUES.md`](./ATAQUES.md) campaña B).
 
@@ -60,7 +60,7 @@ Verificación de `CryptoBankVault` contra el [SWC Registry](https://swcregistry.
 | SWC-129 | Typographical Error | Sí | ✅ | Revisión + `forge build` / tests |
 | SWC-130 | Right-To-Left-Override | No | N/A | Strings ASCII |
 | SWC-131 | Presence of unused variables | Sí | ✅ | Sin variables muertas materiales |
-| SWC-132 | Unexpected Ether balance | Sí | ⚠️ | ETH forzado (p. ej. `selfdestruct`) no acredita ledger; solvencia `balance ≥ Σ ledger` se mantiene |
+| SWC-132 | Unexpected Ether balance | Sí | ✅ | ETH forzado = `surplusETH()`; `rescueETH` solo surplus; ledger intacto |
 | SWC-133 | Hash Collisions (var-length args) | No | N/A | Sin hashing multi-dinámico propio |
 | SWC-134 | Message call with hardcoded gas | No | N/A | `.call{value}` sin `{gas: …}` |
 | SWC-135 | Code With No Effects | No | N/A | Sin statements vacíos relevantes |
@@ -78,11 +78,16 @@ El vault no gestiona allowances. El usuario debe `approve(vault, amount)` en el 
 
 ### SWC-132 — ETH inesperado
 
-Si se fuerza ETH al vault sin pasar por `depositETH`/`receive`, el balance físico sube pero el ledger no. Los retiros siguen limitados al ledger → no hay drenado contable. Invariante: `address(vault).balance >= Σ balances[*][NATIVE]`.
+Si se fuerza ETH al vault sin pasar por `depositETH`/`receive`, el balance físico sube pero el ledger no. Ese excedente es `surplusETH()` y solo el owner puede rescatarlo con `rescueETH` (nunca por encima del surplus). Los retiros de usuarios siguen limitados al ledger.
 
 ### Tokens no estándar
 
-`depositERC20` asume ERC-20 honestos (sin fee-on-transfer). Documentado en NatSpec / `doc/GAS.md`.
+Ver el detalle completo en [`LIMITACIONES.md`](./LIMITACIONES.md).
+
+- **Fee-on-transfer (depósito):** mitigado — `depositERC20` acredita el delta real de `balanceOf`; `received == 0` → `DepositFailed`.
+- **Fee-on-transfer (retiro):** el usuario puede recibir menos que el `amount` debitado del ledger (comportamiento del token). Aceptado / documentado.
+- **Rebase / ERC-20 malicioso:** solo tokens allowlisted pueden depositarse. Delistar no bloquea retiros ya acreditados.
+- **Riesgo residual:** un token allowlisted que rebasea o miente en `balanceOf` sigue siendo peligroso; la allowlist es confianza en el owner.
 
 ---
 
@@ -95,7 +100,7 @@ Si se fuerza ETH al vault sin pasar por `depositETH`/`receive`, el balance físi
 | SWC-105 | `test_AttackA_*` (solo ledger propio) |
 | SWC-107 | `test_Attack_ReentrancyOnWithdrawETH_*`, `test_AttackE_ReentrancyBlocked` |
 | SWC-114 | `test_AttackC1_ApproveOverwriteWithoutZeroing` (documental) |
-| SWC-132 | `test_AttackE_ForcedEthDoesNotCreditLedger` |
+| SWC-132 | `test_AttackE_ForcedEthDoesNotCreditLedger`, `test_AttackA12_*`, `test_RescueETH_*` |
 
 ---
 
@@ -103,4 +108,5 @@ Si se fuerza ETH al vault sin pasar por `depositETH`/`receive`, el balance físi
 
 - [SWC Registry](https://swcregistry.io/)
 - Campañas: [`ATAQUES.md`](./ATAQUES.md)
-- Gas / tokens honestos: [`GAS.md`](./GAS.md)
+- Gas / tokens: [`GAS.md`](./GAS.md)
+- Limitaciones aceptadas: [`LIMITACIONES.md`](./LIMITACIONES.md)

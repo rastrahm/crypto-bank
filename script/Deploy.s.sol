@@ -8,8 +8,9 @@ import {MockERC20} from "../src/mocks/MockERC20.sol";
 
 /// @title Deploy
 /// @notice Despliega `MockERC20` (demo) + `CryptoBankVault` y acuña supply de prueba al broadcaster.
+/// @dev Solo para local/testnet. No usar el mint automático como modelo de mainnet (ver doc/LIMITACIONES.md).
 /// @dev Variables de entorno opcionales:
-///      - `INITIAL_OWNER` (default: msg.sender / broadcaster)
+///      - `INITIAL_OWNER` (default: msg.sender / broadcaster). En producción: multisig o TimelockController.
 ///      - `MOCK_TOKEN_NAME` (default: "Mock USD")
 ///      - `MOCK_TOKEN_SYMBOL` (default: "mUSD")
 ///      - `MOCK_MINT_AMOUNT` (default: 1_000_000 ether, unidades base)
@@ -28,6 +29,11 @@ contract Deploy is Script {
         token = new MockERC20(tokenName, tokenSymbol);
         vault = new CryptoBankVault(initialOwner);
         token.mint(msg.sender, mintAmount);
+        // Solo el owner puede allowlist; si INITIAL_OWNER != broadcaster, el broadcaster no puede setear.
+        // En demo típica INITIAL_OWNER == msg.sender.
+        if (initialOwner == msg.sender) {
+            vault.setTokenAllowed(address(token), true);
+        }
 
         vm.stopBroadcast();
 
@@ -35,5 +41,6 @@ contract Deploy is Script {
         console2.log("CryptoBankVault deployed at:", address(vault));
         console2.log("Vault owner:", initialOwner);
         console2.log("Mock minted to broadcaster:", mintAmount);
+        console2.log("Mock allowlisted:", initialOwner == msg.sender);
     }
 }

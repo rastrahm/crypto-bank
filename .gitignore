@@ -3,8 +3,8 @@ cache/
 out/
 broadcast/
 
-# Dependencias (instaladas vía forge install)
-lib/
+# Dependencias Foundry (forge install) — anclado a la raíz para no ignorar frontend/lib/
+/lib/
 
 # Variables de entorno y secretos
 .env

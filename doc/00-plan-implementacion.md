@@ -137,7 +137,7 @@ Diagramas detallados:
 - `ZeroAmount()`
 - `InsufficientVaultBalance()` / `InsufficientBalance()`
 - `TransferFailed()`
-- `DepositFailed()`
+- `DepositFailed()` — **reservado** (no se emite hoy; SafeERC20 revierte por su cuenta)
 - Errores OZ de pause/ownable según herencia
 
 #### 1.4 Seguridad
@@ -225,7 +225,7 @@ Diagramas detallados:
 | Build | `next build` (+ `next start` o export según estrategia) |
 | Proceso | PM2 / systemd para Node |
 | Proxy | Nginx → `localhost:3000` (HTTPS con Let’s Encrypt si hay dominio) |
-| Env prod | `NEXT_PUBLIC_RPC_URL`, `NEXT_PUBLIC_VAULT_ADDRESS`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_MOCK_TOKEN` |
+| Env prod | `NEXT_PUBLIC_RPC_URL`, `NEXT_PUBLIC_VAULT_ADDRESS`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_ASSETS` |
 | Firewall | Solo 80/443 (+ SSH restringido) |
 | Checklist demo | Wallet en la red correcta; faucet/test ETH; mock token minted |
 
@@ -253,7 +253,7 @@ Diagramas detallados:
 [x] Fase 1  Diseño + tests iniciales (TDD)
 [x] Fase 2  Vault completo + reentrancy/fuzz/invariant
 [x] Fase 3  Deploy scripts + ABI export
-[ ] Fase 4  Frontend Next.js + ethers v6
+[x] Fase 4  Frontend Next.js + ethers v6
 [ ] Fase 5  Deploy VPS Google
 [ ] Fase 6  Docs finales + handoff
 ```
@@ -276,7 +276,7 @@ ETHERSCAN_API_KEY=   # opcional verify
 NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
 NEXT_PUBLIC_CHAIN_ID=31337
 NEXT_PUBLIC_VAULT_ADDRESS=0x...
-NEXT_PUBLIC_MOCK_TOKEN_ADDRESS=0x...
+NEXT_PUBLIC_ASSETS=ETH:native,mUSD:0x...:18
 ```
 
 ---

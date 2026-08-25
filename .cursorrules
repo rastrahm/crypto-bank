@@ -28,6 +28,6 @@ Focus on building a secure, gas-optimized decentralized banking vault supporting
 
 ## 3. TESTING REQUIREMENTS
 
-- **Unit Tests:** Verify deposit/withdrawal logic for both ETH (`receive`/`fallback`) and ERC-20 tokens.
+- **Unit Tests:** Verify deposit/withdrawal logic for both ETH (`receive`) and ERC-20 tokens.
 - **Reentrancy Attack Tests:** Create a malicious receiver contract attempting recursive withdrawals to validate reentrancy protection.
 - **Fuzzing Tests:** Apply property-based fuzzing on deposit/withdrawal amounts using `bound()` and invariant testing on vault balance totals.
