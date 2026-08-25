@@ -56,3 +56,16 @@ La allowlist es **confianza en el owner**, no una prueba de que el token es “h
 | Mint mock → broadcaster | Demo | No usar el script de demo en mainnet |
 | Fee en retiro | Token | No allowlistar tax tokens, o avisar en UX |
 | Rebase / `balanceOf` mentiroso | Owner | Allowlist estricta; no listar tokens dudosos |
+| Login firmado (frontend) | Demo UX | No tratarlo como auth de producción |
+
+---
+
+## 4. Login del frontend (firma local)
+
+**Qué pasa:** el usuario firma un mensaje; la sesión se guarda en `localStorage`. Puede haber verificación de firma en cliente al restaurar, pero **no** hay backend ni SIWE de servidor.
+
+**Por qué está bien:** simplifica la demo multiwallet.
+
+**Qué no hacer:** no presentarlo como autenticación bancaria ni usarlo como único control de acceso a sistemas con valor.
+
+La UI muestra un aviso de versión de prueba y el manual en `/ayuda.html`.
