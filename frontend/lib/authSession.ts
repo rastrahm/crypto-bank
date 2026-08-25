@@ -2,7 +2,7 @@ import { verifyMessage } from "ethers";
 
 const STORAGE_KEY = "crypto-bank.auth.v1";
 
-/** Sesión de login por wallet persistida en localStorage. */
+/** Sesion de login por wallet persistida en localStorage. */
 export interface AuthSession {
   address: string;
   walletRdns: string;
@@ -12,30 +12,22 @@ export interface AuthSession {
   loggedAt: number;
 }
 
-/**
- * @description Construye el mensaje de login a firmar con la wallet.
- * @param {string} address - Address EOA.
- * @param {string} walletName - Nombre de la wallet elegida.
- * @param {number} chainId - Chain id esperada.
- * @returns {string} Mensaje legible para `personal_sign`.
- */
+/** Construye el mensaje de login a firmar con la wallet. */
 export function buildLoginMessage(address: string, walletName: string, chainId: number): string {
   const ts = new Date().toISOString();
   return [
-    "Crypto Bank Vault — Login",
+    "Crypto Bank Vault - Login",
     "",
     `Address: ${address}`,
     `Wallet: ${walletName}`,
     `Chain ID: ${chainId}`,
     `Issued At: ${ts}`,
     "",
-    "Al firmar confirmás el inicio de sesión en la demo. No se transfiere ETH.",
+    "Al firmar confirmas el inicio de sesion en la demo. No se transfiere ETH.",
   ].join("\n");
 }
 
-/**
- * Verifica que `signature` recupere `session.address` para `session.message`.
- */
+/** Verifica que `signature` recupere `session.address` para `session.message`. */
 export function verifyAuthSession(session: AuthSession): boolean {
   if (!session.address || !session.signature || !session.message) {
     return false;
@@ -48,10 +40,7 @@ export function verifyAuthSession(session: AuthSession): boolean {
   }
 }
 
-/**
- * @description Lee la sesión persistida si es válida (incluye verifyMessage).
- * @returns {AuthSession | null} Sesión o null.
- */
+/** Lee la sesion persistida si es valida (incluye verifyMessage). */
 export function loadAuthSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -68,22 +57,15 @@ export function loadAuthSession(): AuthSession | null {
   }
 }
 
-/**
- * @description Persiste la sesión de login (solo si la firma es válida).
- * @param {AuthSession} session - Datos firmados.
- * @returns {void}
- */
+/** Persiste la sesion de login (solo si la firma es valida). */
 export function saveAuthSession(session: AuthSession): void {
   if (!verifyAuthSession(session)) {
-    throw new Error("Sesión inválida: la firma no corresponde a la address");
+    throw new Error("Sesion invalida: la firma no corresponde a la address");
   }
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
-/**
- * @description Elimina la sesión (logout).
- * @returns {void}
- */
+/** Elimina la sesion (logout). */
 export function clearAuthSession(): void {
   window.localStorage.removeItem(STORAGE_KEY);
 }
