@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ayuda — Crypto Bank Vault (demo)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4f4f5;
+        --fg: #18181b;
+        --muted: #52525b;
+        --card: #ffffff;
+        --border: #d4d4d8;
+        --accent: #b45309;
+        --accent-bg: #fffbeb;
+        --accent-border: #fcd34d;
+        --link: #047857;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #09090b;
+          --fg: #fafafa;
+          --muted: #a1a1aa;
+          --card: #18181b;
+          --border: #3f3f46;
+          --accent: #fbbf24;
+          --accent-bg: #422006;
+          --accent-border: #92400e;
+          --link: #34d399;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.55;
+      }
+      .wrap {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 3rem;
+      }
+      header {
+        margin-bottom: 1.5rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin: 0 0 0.35rem;
+      }
+      h2 {
+        font-size: 1.15rem;
+        margin: 1.75rem 0 0.5rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.35rem;
+      }
+      h3 {
+        font-size: 1rem;
+        margin: 1.1rem 0 0.35rem;
+      }
+      p,
+      li {
+        font-size: 0.95rem;
+        color: var(--fg);
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .warn {
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        color: var(--accent);
+        border-radius: 0.5rem;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin: 0.75rem 0;
+      }
+      a {
+        color: var(--link);
+      }
+      nav a {
+        font-size: 0.9rem;
+      }
+      ol,
+      ul {
+        padding-left: 1.25rem;
+      }
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.85em;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 0.25rem;
+        padding: 0.05rem 0.3rem;
+      }
+      .toc {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .toc li {
+        margin: 0.35rem 0;
+      }
+      footer {
+        margin-top: 2.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <p>
+          <a href="/">← Volver a la aplicación</a>
+        </p>
+        <h1>Manual de ayuda — Crypto Bank Vault</h1>
+        <p class="muted">Guía para usuarios de la demostración (versión de prueba).</p>
+      </header>
+
+      <aside class="warn" role="note">
+        <strong>Versión de prueba.</strong> Esta aplicación es solo una demo educativa.
+        <strong>No uses una wallet con fondos reales</strong> ni conectes cuentas de mainnet con valor.
+        Usá redes de prueba (Anvil local, Sepolia, etc.) y cuentas sin valor económico.
+      </aside>
+
+      <nav class="card" aria-label="Índice">
+        <strong>Contenido</strong>
+        <ul class="toc">
+          <li><a href="#que-es">1. ¿Qué es esta aplicación?</a></li>
+          <li><a href="#requisitos">2. Requisitos</a></li>
+          <li><a href="#iniciar">3. Iniciar sesión</a></li>
+          <li><a href="#depositar">4. Depositar</a></li>
+          <li><a href="#retirar">5. Retirar</a></li>
+          <li><a href="#monedas">6. Elegir moneda</a></li>
+          <li><a href="#estados">7. Estados del vault</a></li>
+          <li><a href="#admin">8. Panel de administrador</a></li>
+          <li><a href="#problemas">9. Problemas frecuentes</a></li>
+          <li><a href="#seguridad">10. Seguridad y límites</a></li>
+        </ul>
+      </nav>
+
+      <section id="que-es">
+        <h2>1. ¿Qué es esta aplicación?</h2>
+        <p>
+          Crypto Bank Vault es un <strong>vault bancario descentralizado de demostración</strong>:
+          podés depositar y retirar ETH nativo y tokens ERC-20 (por ejemplo un mock
+          <code>mUSD</code>). Los saldos se llevan en un <em>ledger</em> interno del contrato.
+        </p>
+        <p>
+          La interfaz web habla con la blockchain mediante tu wallet (MetaMask, Phantom EVM,
+          Solflare u otras detectadas).
+        </p>
+      </section>
+
+      <section id="requisitos">
+        <h2>2. Requisitos</h2>
+        <ul>
+          <li>Navegador moderno (Chrome, Brave, Firefox, Edge).</li>
+          <li>Extensión de wallet EVM instalada y desbloqueada.</li>
+          <li>
+            Red correcta: la misma que indica la aplicación (por ejemplo Anvil
+            <code>31337</code> o Sepolia <code>11155111</code>).
+          </li>
+          <li>
+            En redes de prueba: un poco de ETH de faucet para gas, y tokens de demo si vas a
+            operar ERC-20.
+          </li>
+        </ul>
+      </section>
+
+      <section id="iniciar">
+        <h2>3. Iniciar sesión</h2>
+        <ol>
+          <li>Abrí la página principal de la demo.</li>
+          <li>Elegí tu wallet en la lista (las detectadas por EIP-6963).</li>
+          <li>Aprobá la conexión y la firma del mensaje de login en la extensión.</li>
+          <li>
+            Si la red no coincide, la app puede pedirte cambiar o agregar la red; aceptá en la
+            wallet.
+          </li>
+        </ol>
+        <div class="card">
+          <p>
+            <strong>Nota:</strong> la “sesión” es una firma guardada en el navegador para la
+            demo. <strong>No</strong> es un login de banco ni autenticación de servidor. Cerrar
+            sesión limpia ese dato local.
+          </p>
+        </div>
+      </section>
+
+      <section id="depositar">
+        <h2>4. Depositar</h2>
+        <ol>
+          <li>En el selector <strong>Moneda</strong>, elegí ETH u otro activo listado.</li>
+          <li>En <strong>Depositar</strong>, ingresá el monto (número decimal positivo).</li>
+          <li>Confirmá la transacción en la wallet.</li>
+          <li>
+            Si es un ERC-20, primero se pide <code>approve</code> y luego el depósito; pueden ser
+            dos confirmaciones.
+          </li>
+        </ol>
+        <p>
+          Cuando la transacción se confirma, el saldo del ledger en pantalla debería
+          actualizarse.
+        </p>
+      </section>
+
+      <section id="retirar">
+        <h2>5. Retirar</h2>
+        <ol>
+          <li>Elegí la misma moneda que depositaste.</li>
+          <li>Ingresá un monto <strong>menor o igual</strong> a tu saldo en el vault.</li>
+          <li>Confirmá el retiro en la wallet.</li>
+        </ol>
+        <p>
+          No podés retirar más de lo acreditado en el ledger. Si el vault está
+          <strong>pausado</strong>, depósitos y retiros quedan bloqueados.
+        </p>
+      </section>
+
+      <section id="monedas">
+        <h2>6. Elegir moneda</h2>
+        <p>
+          El desplegable lista los activos configurados para la demo (por ejemplo
+          <code>ETH</code> nativo y <code>mUSD</code>). Cada ítem muestra si es nativo o ERC-20 y
+          cuántos decimales usa la interfaz.
+        </p>
+        <p class="muted">
+          Los tokens disponibles los define quien desplegó la demo; no es un mercado abierto de
+          todos los tokens de la red.
+        </p>
+      </section>
+
+      <section id="estados">
+        <h2>7. Estados del vault</h2>
+        <ul>
+          <li><strong>Address del vault</strong> y <strong>chain id</strong> de la red esperada.</li>
+          <li><strong>Tu cuenta</strong> conectada.</li>
+          <li><strong>Saldos</strong> por moneda en el ledger.</li>
+          <li>
+            <strong>Pausado / activo</strong>: si está pausado, no operes depósitos ni retiros
+            hasta que el owner reanude.
+          </li>
+        </ul>
+      </section>
+
+      <section id="admin">
+        <h2>8. Panel de administrador</h2>
+        <p>
+          Solo visible si tu address es el <strong>owner</strong> del contrato. Desde ahí podés
+          pausar o reanudar el vault y, según la versión desplegada, gestionar tokens permitidos
+          o rescates de emergencia.
+        </p>
+        <p class="muted">
+          Si no ves el panel, sos un usuario normal: solo depositás y retirás tus propios
+          fondos del ledger.
+        </p>
+      </section>
+
+      <section id="problemas">
+        <h2>9. Problemas frecuentes</h2>
+        <h3>No veo wallets</h3>
+        <p>Instalá o activá MetaMask (u otra wallet EVM) y recargá la página.</p>
+        <h3>“Red incorrecta”</h3>
+        <p>
+          Cambiá la red en la wallet a la que pide la demo, o aceptá el cambio/alta de red que
+          ofrece la aplicación.
+        </p>
+        <h3>La transacción falla o se cancela</h3>
+        <ul>
+          <li>Cancelaste en la wallet → no pasa nada on-chain.</li>
+          <li>Sin ETH para gas → pedí faucet en la testnet.</li>
+          <li>Sin tokens ERC-20 → pedí mint al operador de la demo o usá la cuenta que recibió el mint.</li>
+          <li>Monto 0 o inválido → corregí el formulario.</li>
+          <li>Vault pausado → esperá al owner.</li>
+        </ul>
+        <h3>El saldo no cambia</h3>
+        <p>
+          Esperá la confirmación de la red. Si ya confirmó y no se actualiza, recargá o volvé a
+          iniciar sesión.
+        </p>
+      </section>
+
+      <section id="seguridad">
+        <h2>10. Seguridad y límites</h2>
+        <ul>
+          <li>
+            <strong>Solo prueba:</strong> no conectes wallets con valor real ni uses mainnet con
+            fondos.
+          </li>
+          <li>
+            Nunca compartas tu <em>seed phrase</em> ni claves privadas. Esta app no te las pide.
+          </li>
+          <li>
+            Revisá siempre en la wallet: red, contrato destino y monto antes de firmar.
+          </li>
+          <li>
+            El login firmado no protege fondos por sí solo; la seguridad está en el contrato y
+            en tu wallet.
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>
+          Crypto Bank Vault — módulo de demostración.
+          <a href="/">Volver a la aplicación</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
