@@ -278,10 +278,36 @@ export class VaultClient {
   /** Normaliza errores de ethers / usuario para la UI. */
   static formatError(error: unknown): string {
     if (typeof error === "object" && error !== null) {
-      const maybe = error as { code?: string; shortMessage?: string; message?: string; reason?: string };
+      const maybe = error as {
+        code?: string;
+        shortMessage?: string;
+        message?: string;
+        reason?: string;
+        data?: string;
+        info?: { error?: { data?: string } };
+        error?: { data?: string };
+      };
       if (maybe.code === "ACTION_REJECTED") {
         return "Transacción cancelada en la wallet";
       }
+
+      const data =
+        (typeof maybe.data === "string" && maybe.data) ||
+        maybe.info?.error?.data ||
+        maybe.error?.data ||
+        "";
+      const decoded = VaultClient.decodeCustomError(data);
+      if (decoded) {
+        return decoded;
+      }
+
+      // ethers a veces mete el selector en el mensaje
+      const blob = `${maybe.shortMessage ?? ""} ${maybe.message ?? ""} ${maybe.reason ?? ""}`;
+      const fromMsg = VaultClient.decodeCustomErrorFromText(blob);
+      if (fromMsg) {
+        return fromMsg;
+      }
+
       if (maybe.shortMessage) {
         return maybe.shortMessage;
       }
@@ -293,6 +319,38 @@ export class VaultClient {
       }
     }
     return "Error desconocido";
+  }
+
+  private static readonly ERROR_HINTS: Record<string, string> = {
+    "0x14ecd6c7": "Saldo insuficiente en el vault (depositá antes de retirar)",
+    InsufficientVaultBalance: "Saldo insuficiente en el vault (depositá antes de retirar)",
+    ZeroAmount: "El monto debe ser mayor que 0",
+    TransferFailed: "Falló la transferencia de ETH",
+    DepositFailed: "El depósito ERC-20 no acreditó tokens",
+    InvalidToken: "Token inválido",
+    TokenNotAllowed: "Token no permitido para depósitos",
+    EnforcedPause: "El vault está pausado",
+    RescueExceedsSurplus: "El rescue supera el excedente disponible",
+    InvalidRecipient: "Destinatario inválido",
+    ReentrancyGuardReentrantCall: "Reentrancy bloqueada",
+  };
+
+  private static decodeCustomError(data: string): string | null {
+    if (!data || data === "0x") return null;
+    const selector = data.slice(0, 10).toLowerCase();
+    return VaultClient.ERROR_HINTS[selector] ?? null;
+  }
+
+  private static decodeCustomErrorFromText(text: string): string | null {
+    for (const [key, hint] of Object.entries(VaultClient.ERROR_HINTS)) {
+      if (text.includes(key)) {
+        return hint;
+      }
+    }
+    if (/unknown custom error|execution reverted/i.test(text)) {
+      return null;
+    }
+    return null;
   }
 
   private readVault(): Contract {

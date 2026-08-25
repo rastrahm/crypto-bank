@@ -12,7 +12,7 @@ describe("buildLoginMessage", () => {
     expect(msg).toContain("Address: 0xabc");
     expect(msg).toContain("Wallet: MetaMask");
     expect(msg).toContain("Chain ID: 31337");
-    expect(msg).toContain("Crypto Bank Vault — Login");
+    expect(msg).toContain("Crypto Bank Vault - Login");
   });
 });
 
