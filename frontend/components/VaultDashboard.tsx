@@ -5,6 +5,7 @@ import type { JSX } from "react";
 import { AdminPanel } from "@/components/AdminPanel";
 import { AmountForm } from "@/components/AmountForm";
 import { AssetSelect } from "@/components/AssetSelect";
+import { DemoDisclaimer } from "@/components/DemoDisclaimer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { VaultStatus } from "@/components/VaultStatus";
 import { WalletLogin } from "@/components/WalletLogin";
@@ -58,6 +59,12 @@ export function VaultDashboard(): JSX.Element {
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Demo Next.js + ethers.js v6</p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="/ayuda.html"
+            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Ayuda
+          </a>
           <ThemeToggle />
           {session ? (
             <button
@@ -72,6 +79,8 @@ export function VaultDashboard(): JSX.Element {
           ) : null}
         </div>
       </header>
+
+      <DemoDisclaimer />
 
       {!session ? (
         <WalletLogin chainId={config.chainId} rpcUrl={config.rpcUrl} onLoggedIn={handleLoggedIn} />

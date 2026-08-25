@@ -47,3 +47,7 @@ Formato: `SYM:native[:decimals]` o `SYM:0xAddress[:decimals]`. Si omitís decima
 2. Depositar / retirar ETH u otros assets del select  
 3. Ver ledger y `paused`  
 4. Si sos owner: pause / unpause  
+
+## Producción / VPS
+
+Ver [`../doc/VPS.md`](../doc/VPS.md). Plantilla: `.env.production.example` → `.env.production` **antes** de `npm run build`.

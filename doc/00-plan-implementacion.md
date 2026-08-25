@@ -231,6 +231,8 @@ Diagramas detallados:
 
 **Criterio de salida:** URL pública de muestra estable; README de operación (arranque, logs, redeploy).
 
+**Entregables en repo:** [`doc/VPS.md`](./VPS.md) + [`deploy/vps/`](../deploy/vps/) (PM2, Nginx, systemd, `setup.sh`). La URL pública se obtiene al aplicar el playbook en tu VM Google.
+
 ---
 
 ### Fase 6 — Hardening, documentación final y handoff
@@ -254,7 +256,7 @@ Diagramas detallados:
 [x] Fase 2  Vault completo + reentrancy/fuzz/invariant
 [x] Fase 3  Deploy scripts + ABI export
 [x] Fase 4  Frontend Next.js + ethers v6
-[ ] Fase 5  Deploy VPS Google
+[x] Fase 5  Deploy VPS Google (artefactos + doc/VPS.md; URL pública = aplicar en tu VM)
 [ ] Fase 6  Docs finales + handoff
 ```
 
@@ -309,3 +311,5 @@ NEXT_PUBLIC_ASSETS=ETH:native,mUSD:0x...:18
 ## 10. Próximo paso inmediato
 
 Al aprobar este plan: **ejecutar Fase 0** (bootstrap Foundry) y abrir **Fase 1** con la interfaz `ICryptoBankVault` + primer test de depósito ETH en rojo.
+
+**Estado actual:** Fases 0–5 (artefactos VPS) listas. Siguiente: **Fase 6** (docs finales / handoff) y, si aplica, ejecutar `doc/VPS.md` en la VM Google para obtener la URL pública.
