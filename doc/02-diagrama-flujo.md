@@ -85,7 +85,7 @@ sequenceDiagram
     Note over V: Effects: balances[user][token] += amount
     Note over V: Interactions: transferFrom(user, vault, amount)
     alt transferFrom falla / shortfall
-        V-->>W: revert DepositFailed / TransferFailed
+        V-->>W: revert SafeERC20 / TransferFailed
     else OK
         V-->>W: Deposited
         W-->>UI: receipt

@@ -5,7 +5,9 @@ import {Test} from "forge-std/Test.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import {CryptoBankVault} from "../../src/CryptoBankVault.sol";
+import {ICryptoBankVault} from "../../src/interfaces/ICryptoBankVault.sol";
 import {MockERC20} from "../../src/mocks/MockERC20.sol";
+import {MockFeeOnTransferERC20} from "../../src/mocks/MockFeeOnTransferERC20.sol";
 
 /// @title CryptoBankVaultTest
 /// @notice Tests unitarios TDD (Fase 1): depósitos/retiros ETH y ERC-20, pausa y errores.
@@ -24,6 +26,9 @@ contract CryptoBankVaultTest is Test {
 
         vault = new CryptoBankVault(owner);
         token = new MockERC20("Mock USD", "mUSD");
+
+        vm.prank(owner);
+        vault.setTokenAllowed(address(token), true);
 
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
@@ -51,7 +56,7 @@ contract CryptoBankVaultTest is Test {
 
     function test_DepositETH_EmitsDeposited() public {
         vm.expectEmit(true, true, false, true);
-        emit CryptoBankVault.Deposited(alice, address(0), 2 ether);
+        emit ICryptoBankVault.Deposited(alice, address(0), 2 ether);
 
         vm.prank(alice);
         vault.depositETH{value: 2 ether}();
@@ -59,7 +64,7 @@ contract CryptoBankVaultTest is Test {
 
     function test_DepositETH_RevertWhen_ZeroValue() public {
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.ZeroAmount.selector);
+        vm.expectRevert(ICryptoBankVault.ZeroAmount.selector);
         vault.depositETH{value: 0}();
     }
 
@@ -91,7 +96,7 @@ contract CryptoBankVaultTest is Test {
         vault.depositETH{value: 1 ether}();
 
         vm.expectEmit(true, true, false, true);
-        emit CryptoBankVault.Withdrawn(alice, address(0), 1 ether);
+        emit ICryptoBankVault.Withdrawn(alice, address(0), 1 ether);
 
         vm.prank(alice);
         vault.withdrawETH(1 ether);
@@ -102,7 +107,7 @@ contract CryptoBankVaultTest is Test {
         vault.depositETH{value: 1 ether}();
 
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.ZeroAmount.selector);
+        vm.expectRevert(ICryptoBankVault.ZeroAmount.selector);
         vault.withdrawETH(0);
     }
 
@@ -111,7 +116,7 @@ contract CryptoBankVaultTest is Test {
         vault.depositETH{value: 1 ether}();
 
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawETH(2 ether);
     }
 
@@ -143,20 +148,94 @@ contract CryptoBankVaultTest is Test {
     function test_DepositERC20_RevertWhen_ZeroAmount() public {
         vm.startPrank(alice);
         token.approve(address(vault), 1);
-        vm.expectRevert(CryptoBankVault.ZeroAmount.selector);
+        vm.expectRevert(ICryptoBankVault.ZeroAmount.selector);
         vault.depositERC20(address(token), 0);
         vm.stopPrank();
     }
 
     function test_DepositERC20_RevertWhen_NativeToken() public {
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.InvalidToken.selector);
+        vm.expectRevert(ICryptoBankVault.InvalidToken.selector);
         vault.depositERC20(address(0), 1 ether);
+    }
+
+    function test_DepositERC20_FeeOnTransfer_CreditsReceivedOnly() public {
+        MockFeeOnTransferERC20 tax = new MockFeeOnTransferERC20("Tax USD", "tUSD", 1_000); // 10%
+        tax.mint(alice, 100 ether);
+
+        vm.prank(owner);
+        vault.setTokenAllowed(address(tax), true);
+
+        vm.startPrank(alice);
+        tax.approve(address(vault), 100 ether);
+        vault.depositERC20(address(tax), 100 ether);
+        vm.stopPrank();
+
+        // Vault recibe 90; ledger debe coincidir (no acreditar 100).
+        assertEq(vault.balanceOf(alice, address(tax)), 90 ether);
+        assertEq(tax.balanceOf(address(vault)), 90 ether);
+
+        vm.prank(alice);
+        vault.withdrawERC20(address(tax), 90 ether);
+        assertEq(vault.balanceOf(alice, address(tax)), 0);
+        // withdraw también paga fee: alice recibe 81 de los 90 del vault.
+        assertEq(tax.balanceOf(alice), 81 ether);
+        assertEq(tax.balanceOf(address(vault)), 0);
+    }
+
+    function test_DepositERC20_RevertWhen_FullFee() public {
+        MockFeeOnTransferERC20 tax = new MockFeeOnTransferERC20("Drain", "DRN", 10_000); // 100%
+        tax.mint(alice, 10 ether);
+
+        vm.prank(owner);
+        vault.setTokenAllowed(address(tax), true);
+
+        vm.startPrank(alice);
+        tax.approve(address(vault), 10 ether);
+        vm.expectRevert(ICryptoBankVault.DepositFailed.selector);
+        vault.depositERC20(address(tax), 10 ether);
+        vm.stopPrank();
+
+        assertEq(vault.balanceOf(alice, address(tax)), 0);
+        assertEq(tax.balanceOf(address(vault)), 0);
+    }
+
+    function test_DepositERC20_RevertWhen_TokenNotAllowed() public {
+        MockERC20 other = new MockERC20("Other", "OTH");
+        other.mint(alice, 10 ether);
+
+        vm.startPrank(alice);
+        other.approve(address(vault), 10 ether);
+        vm.expectRevert(ICryptoBankVault.TokenNotAllowed.selector);
+        vault.depositERC20(address(other), 10 ether);
+        vm.stopPrank();
+    }
+
+    function test_SetTokenAllowed_OnlyOwner() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.setTokenAllowed(address(token), false);
+    }
+
+    function test_WithdrawERC20_AfterDelist_StillWorks() public {
+        vm.startPrank(alice);
+        token.approve(address(vault), 5 ether);
+        vault.depositERC20(address(token), 5 ether);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        vault.setTokenAllowed(address(token), false);
+
+        assertFalse(vault.isTokenAllowed(address(token)));
+
+        vm.prank(alice);
+        vault.withdrawERC20(address(token), 5 ether);
+        assertEq(vault.balanceOf(alice, address(token)), 0);
     }
 
     function test_WithdrawERC20_RevertWhen_InsufficientBalance() public {
         vm.prank(alice);
-        vm.expectRevert(CryptoBankVault.InsufficientVaultBalance.selector);
+        vm.expectRevert(ICryptoBankVault.InsufficientVaultBalance.selector);
         vault.withdrawERC20(address(token), 1 ether);
     }
 
@@ -210,5 +289,57 @@ contract CryptoBankVaultTest is Test {
 
         assertEq(vault.balanceOf(alice, address(0)), 1 ether);
         assertEq(vault.balanceOf(bob, address(0)), 4 ether);
+        assertEq(vault.totalBalance(address(0)), 5 ether);
+    }
+
+    // ============ Rescue ============
+
+    function test_RescueETH_SurplusOnly() public {
+        vm.prank(alice);
+        vault.depositETH{value: 2 ether}();
+
+        new UnitEthForcedSender{value: 1 ether}(payable(address(vault)));
+        assertEq(vault.surplusETH(), 1 ether);
+        assertEq(vault.totalBalance(address(0)), 2 ether);
+
+        uint256 ownerBefore = owner.balance;
+        vm.prank(owner);
+        vault.rescueETH(owner, 1 ether);
+
+        assertEq(owner.balance, ownerBefore + 1 ether);
+        assertEq(address(vault).balance, 2 ether);
+        assertEq(vault.balanceOf(alice, address(0)), 2 ether);
+        assertEq(vault.surplusETH(), 0);
+    }
+
+    function test_RescueETH_RevertWhen_TouchesLedger() public {
+        vm.prank(alice);
+        vault.depositETH{value: 1 ether}();
+
+        vm.prank(owner);
+        vm.expectRevert(ICryptoBankVault.RescueExceedsSurplus.selector);
+        vault.rescueETH(owner, 1);
+    }
+
+    function test_RescueERC20_DirectTransferSurplus() public {
+        token.mint(bob, 3 ether);
+        vm.prank(bob);
+        token.transfer(address(vault), 3 ether);
+
+        assertEq(vault.surplusERC20(address(token)), 3 ether);
+        assertEq(vault.totalBalance(address(token)), 0);
+
+        vm.prank(owner);
+        vault.rescueERC20(address(token), owner, 3 ether);
+
+        assertEq(token.balanceOf(owner), 3 ether);
+        assertEq(vault.surplusERC20(address(token)), 0);
+    }
+}
+
+/// @dev Fuerza ETH al vault vía selfdestruct (tests de rescue / SWC-132).
+contract UnitEthForcedSender {
+    constructor(address payable target) payable {
+        selfdestruct(target);
     }
 }

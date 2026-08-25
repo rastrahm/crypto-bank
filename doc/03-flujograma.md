@@ -39,7 +39,7 @@ flowchart TD
     V -->|ETH| W[Ya recibido msg.value]
     V -->|ERC-20| X[transferFrom]
     X --> Y{Transfer OK?}
-    Y -->|No| Z[Revert DepositFailed / TransferFailed]
+    Y -->|No| Z[Revert SafeERC20 / TransferFailed]
     Z --> R
     Y -->|Sí| AA[Emit Deposited]
     W --> AA

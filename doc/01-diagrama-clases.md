@@ -23,9 +23,7 @@ classDiagram
 
     class CryptoBankVault {
         -mapping~address,mapping~address,uint256~~ balances
-        -address owner
-        -bool paused
-        -uint256 locked
+        +NATIVE address
         +receive() payable
         +depositETH() payable
         +depositERC20(address token, uint256 amount)
@@ -34,8 +32,7 @@ classDiagram
         +balanceOf(address user, address token) view uint256
         +pause()
         +unpause()
-        -_deposit(address user, address token, uint256 amount)
-        -_withdraw(address user, address token, uint256 amount)
+        -_creditNative(address user, uint256 amount)
     }
 
     class Ownable2Step {
@@ -52,8 +49,8 @@ classDiagram
         #_unpause()
     }
 
-    class ReentrancyGuard {
-        <<OpenZeppelin o custom>>
+    class ReentrancyGuardTransient {
+        <<OpenZeppelin EIP-1153>>
         #nonReentrant()
     }
 
@@ -75,49 +72,58 @@ classDiagram
         InsufficientVaultBalance()
         TransferFailed()
         DepositFailed()
+        InvalidToken()
     }
 
     class VaultClient {
         <<frontend ethers v6>>
         -provider BrowserProvider
         -signer Signer
-        -vault Contract
         +connectWallet() address
-        +getBalance(user, token) Promise~bigint~
-        +depositETH(amount) Promise~TxResponse~
-        +withdrawETH(amount) Promise~TxResponse~
-        +depositERC20(token, amount) Promise~TxResponse~
-        +withdrawERC20(token, amount) Promise~TxResponse~
-        +approveToken(token, amount) Promise~TxResponse~
+        +getBalances(user) Promise~VaultBalances~
+        +depositAsset(asset, amount) Promise~TxResponse~
+        +withdrawAsset(asset, amount) Promise~TxResponse~
+        +pause() Promise~TxResponse~
+        +unpause() Promise~TxResponse~
     }
 
-    class DepositForm {
+    class AmountForm {
         <<React client>>
-        +onSubmit(amount, asset)
+        +op deposit|withdraw
+        +onSubmit(op, amount)
     }
 
-    class WithdrawForm {
+    class AssetSelect {
         <<React client>>
-        +onSubmit(amount, asset)
+        +assets SupportedAsset[]
+        +onChange(assetId)
     }
 
-    class WalletButton {
-        <<React client>>
-        +onConnect()
+    class WalletLogin {
+        <<React client EIP-6963>>
+        +onLoggedIn(session, wallet)
+    }
+
+    class useVaultApp {
+        <<React hook>>
+        +session
+        +handleAction()
+        +handlePause()
     }
 
     ICryptoBankVault <|.. CryptoBankVault : implements
     Ownable2Step <|-- CryptoBankVault
     Pausable <|-- CryptoBankVault
-    ReentrancyGuard <|-- CryptoBankVault
+    ReentrancyGuardTransient <|-- CryptoBankVault
     CryptoBankVault ..> IERC20 : transfer / transferFrom
     CryptoBankVault ..> CryptoBankErrors : reverts
     MockERC20 --|> IERC20
     VaultClient ..> ICryptoBankVault : ABI + address
     VaultClient ..> IERC20 : approve / allowance
-    DepositForm --> VaultClient
-    WithdrawForm --> VaultClient
-    WalletButton --> VaultClient
+    AmountForm --> useVaultApp
+    AssetSelect --> useVaultApp
+    WalletLogin --> useVaultApp
+    useVaultApp --> VaultClient
 ```
 
 ---
@@ -127,27 +133,32 @@ classDiagram
 ### 2.1 Ledger
 
 - Clave compuesta: `balances[user][token]`.
-- ETH nativo: token sentinel `address(0)` (constante documentada, p. ej. `NATIVE = address(0)`).
+- ETH nativo: token sentinel `address(0)` (`NATIVE`).
 
 ### 2.2 Herencia OZ
 
-- Preferir **Ownable2Step** + **Pausable** + **ReentrancyGuard** de OpenZeppelin v5.
-- Alternativa permitida por reglas del módulo: guard custom `uint256` / transient, siempre con CEI.
+- **Ownable2Step** + **Pausable** + **ReentrancyGuardTransient** (OpenZeppelin v5 / Cancun).
 
 ### 2.3 Frontend
 
 - `VaultClient` encapsula ethers (`BrowserProvider`, `Contract`).
-- Componentes React no hablan RPC directamente: delegan en `VaultClient` / hooks finos.
-- Validación de montos y addresses con **Zod** antes de firmar txs.
+- `useVaultApp` concentra sesión, saldos y txs; los componentes solo renderizan.
+- Assets desde `NEXT_PUBLIC_ASSETS` (`SYM:native[:d]` / `SYM:0x…[:d]`).
+- Validación de montos con **Zod** antes de firmar txs.
+- Login por firma: **demo UX**, no auth de servidor.
 
-### 2.4 Eventos sugeridos (no dibujados arriba)
+### 2.4 Errores
+
+- `DepositFailed`: **reservado** (tokens no estándar / shortfall). Hoy SafeERC20 revierte por su cuenta; el contrato no emite este error.
+
+### 2.5 Eventos
 
 ```solidity
 event Deposited(address indexed user, address indexed token, uint256 amount);
 event Withdrawn(address indexed user, address indexed token, uint256 amount);
-event EmergencyPaused(address indexed account);
-event EmergencyUnpaused(address indexed account);
 ```
+
+(Pause usa eventos OZ `Paused` / `Unpaused`.)
 
 ---
 

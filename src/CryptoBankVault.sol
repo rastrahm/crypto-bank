@@ -13,45 +13,16 @@ import {ICryptoBankVault} from "./interfaces/ICryptoBankVault.sol";
 /// @title CryptoBankVault
 /// @notice Vault bancario descentralizado con ledger interno para ETH y ERC-20.
 /// @dev CEI + `ReentrancyGuardTransient` (EIP-1153) + `Pausable` + `Ownable2Step`.
-/// @dev Gas: subtract `unchecked` tras check; sin delta `balanceOf` en ERC-20 (solo tokens honestos);
+/// @dev Gas: subtract `unchecked` tras check; delta `balanceOf` en ERC-20 (fee-on-transfer);
 ///      pause chequeado una sola vez en `receive`; `msg.sender` cacheado en paths calientes.
+/// @dev ERC-20: solo depósitos allowlisted. Rescue solo del excedente físico vs `_totalBalances`.
+/// @dev Producción: el `initialOwner` debería ser un multisig y/o TimelockController (pause congela retiros).
 contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
-    // ============ Errors ============
-
-    /// @dev Se intentó depositar o retirar con `amount == 0` (o `msg.value == 0`).
-    error ZeroAmount();
-
-    /// @dev El saldo del ledger del usuario es insuficiente para el retiro.
-    error InsufficientVaultBalance();
-
-    /// @dev Falló la transferencia nativa ETH (`.call`).
-    error TransferFailed();
-
-    /// @dev Falló el depósito ERC-20 (reservado / shortfall de tokens no estándar).
-    error DepositFailed();
-
-    /// @dev Se usó `address(0)` donde se esperaba un ERC-20, o un token inválido.
-    error InvalidToken();
-
-    // ============ Events ============
-
-    /// @notice Emitido cuando un usuario deposita un activo en el vault.
-    /// @param user Cuenta acreditada en el ledger.
-    /// @param token Activo (`address(0)` = ETH).
-    /// @param amount Cantidad depositada.
-    event Deposited(address indexed user, address indexed token, uint256 amount);
-
-    /// @notice Emitido cuando un usuario retira un activo del vault.
-    /// @param user Cuenta debitada en el ledger.
-    /// @param token Activo (`address(0)` = ETH).
-    /// @param amount Cantidad retirada.
-    event Withdrawn(address indexed user, address indexed token, uint256 amount);
-
     // ============ Constants ============
 
-    /// @notice Sentinel para ETH nativo en el ledger (`balances[user][NATIVE]`).
+    /// @inheritdoc ICryptoBankVault
     /// @dev `constant` se inlinea en bytecode (sin SLOAD).
     address public constant NATIVE = address(0);
 
@@ -60,101 +31,148 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
     /// @dev Ledger interno: usuario → token → saldo contable.
     mapping(address user => mapping(address token => uint256 amount)) private _balances;
 
+    /// @dev Suma de ledgers por token (`NATIVE` = ETH). Base para calcular surplus rescatable.
+    mapping(address token => uint256 amount) private _totalBalances;
+
+    /// @dev ERC-20 permitidos para `depositERC20`. ETH nativo no usa esta mapping.
+    mapping(address token => bool allowed) private _allowedTokens;
+
     // ============ Constructor ============
 
     /// @notice Despliega el vault e inicializa el owner en dos pasos (Ownable2Step).
-    /// @param initialOwner Cuenta propietaria inicial (pausa / ownership).
+    /// @param initialOwner Preferí multisig/timelock en producción (pausa / allowlist / rescue / ownership).
     constructor(address initialOwner) Ownable(initialOwner) {}
 
     // ============ Receive ============
 
     /// @notice Acepta ETH directo y lo acredita como depósito del `msg.sender`.
-    /// @dev Equivalente a `depositETH()`; el check de pausa vive aquí (no hay modifier en `receive`).
-    receive() external payable {
+    /// @dev Equivalente a `depositETH()`. `nonReentrant` unifica la superficie con retiros/ERC-20
+    ///      (evita reentrar depósitos desde un `receive` durante `withdrawETH`).
+    receive() external payable nonReentrant {
         if (paused()) {
             revert EnforcedPause();
         }
-        _creditNative(msg.sender, msg.value);
+        _credit(msg.sender, NATIVE, msg.value);
     }
 
     // ============ External ============
 
     /// @inheritdoc ICryptoBankVault
-    function depositETH() external payable whenNotPaused {
-        _creditNative(msg.sender, msg.value);
+    /// @dev `nonReentrant` por superficie uniforme (no hay call externo aquí).
+    function depositETH() external payable whenNotPaused nonReentrant {
+        _credit(msg.sender, NATIVE, msg.value);
     }
 
     /// @inheritdoc ICryptoBankVault
-    /// @dev Asume ERC-20 honestos (sin fee-on-transfer). No se hacen `balanceOf` extra a propósito (gas).
+    /// @dev Acredita el delta real de `balanceOf` (fee-on-transfer). Require allowlist.
+    /// @dev Checks → Interactions → Effects bajo `nonReentrant` (el crédito depende del monto recibido).
     function depositERC20(address token, uint256 amount) external whenNotPaused nonReentrant {
         if (token == NATIVE) {
             revert InvalidToken();
         }
+        if (!_allowedTokens[token]) {
+            revert TokenNotAllowed();
+        }
         if (amount == 0) {
             revert ZeroAmount();
         }
 
         address account = msg.sender;
+        IERC20 erc20 = IERC20(token);
 
-        // Effects
-        _balances[account][token] += amount;
+        // Interactions — medir delta (fee-on-transfer / tax tokens).
+        uint256 balanceBefore = erc20.balanceOf(address(this));
+        erc20.safeTransferFrom(account, address(this), amount);
+        uint256 balanceAfter = erc20.balanceOf(address(this));
+        if (balanceAfter <= balanceBefore) {
+            revert DepositFailed();
+        }
 
-        // Interactions
-        IERC20(token).safeTransferFrom(account, address(this), amount);
+        uint256 received;
+        unchecked {
+            received = balanceAfter - balanceBefore;
+        }
 
-        emit Deposited(account, token, amount);
+        _credit(account, token, received);
     }
 
     /// @inheritdoc ICryptoBankVault
     function withdrawETH(uint256 amount) external whenNotPaused nonReentrant {
-        if (amount == 0) {
-            revert ZeroAmount();
-        }
-
         address account = msg.sender;
-        uint256 bal = _balances[account][NATIVE];
-        if (bal < amount) {
-            revert InsufficientVaultBalance();
-        }
+        _debit(account, NATIVE, amount);
 
-        // Effects — `unchecked` seguro: `bal >= amount` ya verificado.
-        unchecked {
-            _balances[account][NATIVE] = bal - amount;
-        }
+        emit Withdrawn(account, NATIVE, amount);
 
-        // Interactions
         (bool ok,) = account.call{value: amount}("");
         if (!ok) {
             revert TransferFailed();
         }
-
-        emit Withdrawn(account, NATIVE, amount);
     }
 
     /// @inheritdoc ICryptoBankVault
+    /// @dev No exige allowlist: si el token se delista, los usuarios pueden seguir retirando.
     function withdrawERC20(address token, uint256 amount) external whenNotPaused nonReentrant {
         if (token == NATIVE) {
             revert InvalidToken();
         }
+
+        address account = msg.sender;
+        _debit(account, token, amount);
+
+        emit Withdrawn(account, token, amount);
+
+        IERC20(token).safeTransfer(account, amount);
+    }
+
+    /// @inheritdoc ICryptoBankVault
+    function setTokenAllowed(address token, bool allowed) external onlyOwner {
+        if (token == NATIVE) {
+            revert InvalidToken();
+        }
+        _allowedTokens[token] = allowed;
+        emit TokenAllowlistUpdated(token, allowed);
+    }
+
+    /// @inheritdoc ICryptoBankVault
+    /// @dev Solo el excedente `balance - totalBalance(NATIVE)`. No toca fondos del ledger.
+    function rescueETH(address to, uint256 amount) external onlyOwner nonReentrant {
+        if (to == address(0)) {
+            revert InvalidRecipient();
+        }
         if (amount == 0) {
             revert ZeroAmount();
         }
-
-        address account = msg.sender;
-        uint256 bal = _balances[account][token];
-        if (bal < amount) {
-            revert InsufficientVaultBalance();
+        if (amount > surplusETH()) {
+            revert RescueExceedsSurplus();
         }
 
-        // Effects
-        unchecked {
-            _balances[account][token] = bal - amount;
+        emit Rescued(NATIVE, to, amount);
+
+        (bool ok,) = to.call{value: amount}("");
+        if (!ok) {
+            revert TransferFailed();
+        }
+    }
+
+    /// @inheritdoc ICryptoBankVault
+    /// @dev Solo el excedente físico vs ledger. No exige allowlist (tokens enviados por error).
+    function rescueERC20(address token, address to, uint256 amount) external onlyOwner nonReentrant {
+        if (token == NATIVE) {
+            revert InvalidToken();
+        }
+        if (to == address(0)) {
+            revert InvalidRecipient();
+        }
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+        if (amount > surplusERC20(token)) {
+            revert RescueExceedsSurplus();
         }
 
-        // Interactions
-        IERC20(token).safeTransfer(account, amount);
+        emit Rescued(token, to, amount);
 
-        emit Withdrawn(account, token, amount);
+        IERC20(token).safeTransfer(to, amount);
     }
 
     /// @inheritdoc ICryptoBankVault
@@ -174,15 +192,65 @@ contract CryptoBankVault is ICryptoBankVault, Ownable2Step, Pausable, Reentrancy
         return _balances[user][token];
     }
 
+    /// @inheritdoc ICryptoBankVault
+    function totalBalance(address token) external view returns (uint256 amount) {
+        return _totalBalances[token];
+    }
+
+    /// @inheritdoc ICryptoBankVault
+    function isTokenAllowed(address token) external view returns (bool allowed) {
+        return _allowedTokens[token];
+    }
+
+    /// @inheritdoc ICryptoBankVault
+    function surplusETH() public view returns (uint256 amount) {
+        uint256 bal = address(this).balance;
+        uint256 accounted = _totalBalances[NATIVE];
+        unchecked {
+            return bal > accounted ? bal - accounted : 0;
+        }
+    }
+
+    /// @inheritdoc ICryptoBankVault
+    function surplusERC20(address token) public view returns (uint256 amount) {
+        if (token == NATIVE) {
+            return 0;
+        }
+        uint256 bal = IERC20(token).balanceOf(address(this));
+        uint256 accounted = _totalBalances[token];
+        unchecked {
+            return bal > accounted ? bal - accounted : 0;
+        }
+    }
+
     // ============ Internal ============
 
-    /// @dev Acredita ETH en el ledger. Caller debe haber validado `!paused` (`whenNotPaused` o check en `receive`).
-    function _creditNative(address user, uint256 amount) internal {
+    /// @dev Acredita `amount` en el ledger de `user` para `token` (incluye `NATIVE`). Emite `Deposited`.
+    /// @dev Caller debe haber validado pausa / allowlist / amount > 0 según el path.
+    function _credit(address user, address token, uint256 amount) internal {
         if (amount == 0) {
             revert ZeroAmount();
         }
 
-        _balances[user][NATIVE] += amount;
-        emit Deposited(user, NATIVE, amount);
+        _balances[user][token] += amount;
+        _totalBalances[token] += amount;
+        emit Deposited(user, token, amount);
+    }
+
+    /// @dev Debita `amount` del ledger. Revierte si `amount == 0` o saldo insuficiente.
+    function _debit(address user, address token, uint256 amount) internal {
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+
+        uint256 bal = _balances[user][token];
+        if (bal < amount) {
+            revert InsufficientVaultBalance();
+        }
+
+        unchecked {
+            _balances[user][token] = bal - amount;
+            _totalBalances[token] -= amount;
+        }
     }
 }
