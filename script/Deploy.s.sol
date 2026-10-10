@@ -8,7 +8,7 @@ import {MockERC20} from "../src/mocks/MockERC20.sol";
 
 /// @title Deploy
 /// @notice Despliega `MockERC20` (demo) + `CryptoBankVault` y acuña supply de prueba al broadcaster.
-/// @dev Solo para local/testnet. No usar el mint automático como modelo de mainnet (ver doc/LIMITACIONES.md).
+/// @dev Solo para local/testnet. No usar el mint automático como modelo de mainnet (ver doc/LIMITACIONES-ES.md).
 /// @dev Variables de entorno opcionales:
 ///      - `INITIAL_OWNER` (default: msg.sender / broadcaster). En producción: multisig o TimelockController.
 ///      - `MOCK_TOKEN_NAME` (default: "Mock USD")

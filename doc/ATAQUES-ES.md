@@ -1,10 +1,11 @@
 # Campañas de ataque — CryptoBankVault
+> 🇬🇧 [English version](./ATAQUES-EN.md)
 
 > **Protocolo:** tests Foundry defensivos (`vm.expectRevert` / invariantes). El éxito del “ataque” es que **falle** o quede documentado como limitación de estándar.  
 > **Fuera de alcance:** scripts de exploit, payloads ofensivos, o procedimientos para extraer fondos ajenos.
 
 Contrato: `src/CryptoBankVault.sol`  
-Auditoría: [`SWC-AUDIT.md`](./SWC-AUDIT.md)
+Auditoría: [`SWC-AUDIT-ES.md`](./SWC-AUDIT-ES.md)
 
 ---
 

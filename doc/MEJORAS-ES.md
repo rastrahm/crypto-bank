@@ -1,4 +1,5 @@
 # Mejoras futuras — Crypto Bank Vault
+> 🇬🇧 [English version](./MEJORAS-EN.md)
 
 Ideas **fuera del alcance** del módulo 02 (Fases 0–6). Prioridad sugerida para un fork / v2.
 

@@ -1,6 +1,7 @@
 # Diagrama de flujo — Crypto Bank Vault
+> 🇬🇧 [English version](./02-diagrama-flujo-EN.md)
 
-Secuencias de interacción entre **usuario**, **frontend (ethers.js)** y **contratos**. Complementa el [flujograma de decisiones](./03-flujograma.md).
+Secuencias de interacción entre **usuario**, **frontend (ethers.js)** y **contratos**. Complementa el [flujograma de decisiones](./03-flujograma-ES.md).
 
 ---
 

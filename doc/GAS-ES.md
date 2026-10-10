@@ -1,4 +1,5 @@
 # Optimización de gas — CryptoBankVault (Fase 2)
+> 🇬🇧 [English version](./GAS-EN.md)
 
 ## Cambios aplicados
 
@@ -28,7 +29,7 @@ Medido con `forge test --match-contract CryptoBankVaultTest --gas-report`.
 
 ## Fuera de alcance (no optimizado a propósito)
 
-- Fee-on-transfer en **retiro** y tokens rebase / `balanceOf` mentiroso allowlisted: ver [`LIMITACIONES.md`](./LIMITACIONES.md).
+- Fee-on-transfer en **retiro** y tokens rebase / `balanceOf` mentiroso allowlisted: ver [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md).
 - Allowlist + `_totalBalances` + rescue: coste de storage/lecturas a cambio de solvencia y ops; no “des-optimizar” sin medir.
 - Assembly en `.call` ETH: ahorro marginal vs legibilidad.
 - Packing extra de storage: el ledger ya es un mapping anidado (slot por user+token).

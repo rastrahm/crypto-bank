@@ -1,4 +1,5 @@
 # Deploy playbook — Crypto Bank Vault (Fase 3)
+> 🇬🇧 [English version](./DEPLOY-EN.md)
 
 Comandos para desplegar el vault + mock ERC-20 y exportar ABIs al frontend.
 
@@ -86,7 +87,7 @@ Demo local: EOA de Anvil está bien.
 
 `Deploy.s.sol` **acuña** el MockERC20 al broadcaster y lo allowlistea si el broadcaster es owner. Eso es intencional para probar el frontend en Anvil/testnet.
 
-**No** uses ese mint automático como modelo de mainnet. Detalle: [`LIMITACIONES.md`](./LIMITACIONES.md) §1.
+**No** uses ese mint automático como modelo de mainnet. Detalle: [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md) §1.
 
 ## 5. Verificación rápida post-deploy
 

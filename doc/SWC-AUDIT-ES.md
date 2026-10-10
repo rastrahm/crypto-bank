@@ -1,4 +1,5 @@
 # Auditoría SWC — CryptoBankVault
+> 🇬🇧 [English version](./SWC-AUDIT-EN.md)
 
 Verificación de `CryptoBankVault` contra el [SWC Registry](https://swcregistry.io/) (EIP-1470).
 
@@ -20,7 +21,7 @@ Verificación de `CryptoBankVault` contra el [SWC Registry](https://swcregistry.
 
 **Conclusión:** Sin vulnerabilidades SWC explotables en el alcance del vault. Ítem informativo: race de `approve` ERC-20 externo (SWC-114; frontend ya hace approve 0→N). Fee-on-transfer + allowlist + rescue de surplus cubiertos.
 
-**Fuera de superficie del vault:** EIP-2612 / permit / malleabilidad de firmas / replay de permit — el vault **no** implementa `permit`; esas campañas del módulo ERC-20 son **N/A** aquí (ver [`ATAQUES.md`](./ATAQUES.md) campaña B).
+**Fuera de superficie del vault:** EIP-2612 / permit / malleabilidad de firmas / replay de permit — el vault **no** implementa `permit`; esas campañas del módulo ERC-20 son **N/A** aquí (ver [`ATAQUES-ES.md`](./ATAQUES-ES.md) campaña B).
 
 ---
 
@@ -82,7 +83,7 @@ Si se fuerza ETH al vault sin pasar por `depositETH`/`receive`, el balance físi
 
 ### Tokens no estándar
 
-Ver el detalle completo en [`LIMITACIONES.md`](./LIMITACIONES.md).
+Ver el detalle completo en [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md).
 
 - **Fee-on-transfer (depósito):** mitigado — `depositERC20` acredita el delta real de `balanceOf`; `received == 0` → `DepositFailed`.
 - **Fee-on-transfer (retiro):** el usuario puede recibir menos que el `amount` debitado del ledger (comportamiento del token). Aceptado / documentado.
@@ -107,6 +108,6 @@ Ver el detalle completo en [`LIMITACIONES.md`](./LIMITACIONES.md).
 ## Referencias
 
 - [SWC Registry](https://swcregistry.io/)
-- Campañas: [`ATAQUES.md`](./ATAQUES.md)
-- Gas / tokens: [`GAS.md`](./GAS.md)
-- Limitaciones aceptadas: [`LIMITACIONES.md`](./LIMITACIONES.md)
+- Campañas: [`ATAQUES-ES.md`](./ATAQUES-ES.md)
+- Gas / tokens: [`GAS-ES.md`](./GAS-ES.md)
+- Limitaciones aceptadas: [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md)

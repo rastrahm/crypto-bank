@@ -1,10 +1,11 @@
-# Diagrama de clases — Crypto Bank Vault
+# Class diagram — Crypto Bank Vault
+> 🇪🇸 [Versión en español](./01-diagrama-clases-ES.md)
 
-Vista estática de tipos, responsabilidades y relaciones entre contratos on-chain y la capa frontend (ethers.js). Alineado a la implementación final (Fase 6).
+Static view of types, responsibilities and relationships between the on-chain contracts and the frontend layer (ethers.js). Aligned with the final implementation (Phase 6).
 
 ---
 
-## 1. Diagrama de clases (on-chain + frontend)
+## 1. Class diagram (on-chain + frontend)
 
 ```mermaid
 classDiagram
@@ -120,41 +121,41 @@ classDiagram
 
 ---
 
-## 2. Notas de diseño
+## 2. Design notes
 
 ### 2.1 Ledger
 
 - `balances[user][token]`; ETH = `NATIVE` (`address(0)`).
-- `_totalBalances[token]` para surplus / rescue.
+- `_totalBalances[token]` for surplus / rescue.
 
 ### 2.2 ERC-20
 
-- Depósitos solo si `isTokenAllowed(token)`.
-- `depositERC20` acredita **delta** de `balanceOf` (fee-on-transfer en depósito).
-- Retiros no exigen allowlist (saldos ya acreditados).
+- Deposits only if `isTokenAllowed(token)`.
+- `depositERC20` credits the **delta** of `balanceOf` (fee-on-transfer on deposit).
+- Withdrawals do not require the allowlist (balances already credited).
 
-### 2.3 Herencia OZ
+### 2.3 OZ inheritance
 
 - Ownable2Step + Pausable + ReentrancyGuardTransient (Cancun).
 
 ### 2.4 Frontend
 
-- `VaultClient` + `useVaultApp`; assets desde `NEXT_PUBLIC_ASSETS` (`SYM:native[:d]` / `SYM:0x…[:d]`).
-- Disclaimer de prueba + `/ayuda.html`.
-- Login firmado = UX demo (no SIWE server).
+- `VaultClient` + `useVaultApp`; assets from `NEXT_PUBLIC_ASSETS` (`SYM:native[:d]` / `SYM:0x…[:d]`).
+- Test disclaimer + `/ayuda.html`.
+- Signed login = demo UX (no SIWE server).
 
-### 2.5 Eventos
+### 2.5 Events
 
-`Deposited`, `Withdrawn`, `TokenAllowlistUpdated`, `Rescued`, más `Paused`/`Unpaused` de OZ.
+`Deposited`, `Withdrawn`, `TokenAllowlistUpdated`, `Rescued`, plus `Paused`/`Unpaused` from OZ.
 
 ---
 
-## 3. Convención de layout Solidity
+## 3. Solidity layout convention
 
 1. Imports  
-2. Errores / eventos (en interfaz + impl según diseño actual)  
-3. Constantes  
-4. Estado  
+2. Errors / events (in interface + implementation per the current design)  
+3. Constants  
+4. State  
 5. Constructor  
 6. `receive`  
 7. Externals → views → internals  

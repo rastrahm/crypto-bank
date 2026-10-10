@@ -25,4 +25,4 @@ ufw allow 'Nginx Full' || true
 echo ">>> ufw: revisá 'ufw status' y 'ufw enable' cuando estés listo."
 
 echo ">>> Node $(node -v) | npm $(npm -v) | pm2 $(pm2 -v)"
-echo ">>> Siguiente: clonar repo en /opt/crypto-bank y seguir doc/VPS.md"
+echo ">>> Siguiente: clonar repo en /opt/crypto-bank y seguir doc/VPS-ES.md"
