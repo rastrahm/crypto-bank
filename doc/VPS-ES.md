@@ -1,7 +1,8 @@
 # Fase 5 — Demo en VPS (Google / Ubuntu)
+> 🇬🇧 [English version](./VPS-EN.md)
 
 Playbook de operación para publicar el frontend Next.js detrás de Nginx, con proceso gestionado por PM2 (o systemd).  
-Deploy on-chain: ver [`DEPLOY.md`](./DEPLOY.md).
+Deploy on-chain: ver [`DEPLOY-ES.md`](./DEPLOY-ES.md).
 
 **Criterio de salida:** URL pública estable + este documento (arranque, logs, redeploy).
 
@@ -67,7 +68,7 @@ Anotá:
 - `MockERC20`
 - `chainId` (Sepolia = `11155111`)
 
-Mint demo / allowlist: ver [`LIMITACIONES.md`](./LIMITACIONES.md) §1.
+Mint demo / allowlist: ver [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md) §1.
 
 ---
 
@@ -220,5 +221,5 @@ Si solo cambian ABIs: `./script/export-abi.sh` en la máquina de build, commit/s
 ## 10. Seguridad (demo)
 
 - No subas `PRIVATE_KEY` ni `.env` Foundry al VPS salvo que debas redeployar contratos ahí.
-- Login por firma = **UX demo**, no auth de servidor ([`LIMITACIONES`](./LIMITACIONES.md) / README frontend).
-- Owner del vault en testnet: EOA de práctica OK; mainnet → multisig ([`DEPLOY.md`](./DEPLOY.md)).
+- Login por firma = **UX demo**, no auth de servidor ([`LIMITACIONES`](./LIMITACIONES-ES.md) / README frontend).
+- Owner del vault en testnet: EOA de práctica OK; mainnet → multisig ([`DEPLOY-ES.md`](./DEPLOY-ES.md)).

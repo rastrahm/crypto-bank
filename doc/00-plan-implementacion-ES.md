@@ -1,4 +1,5 @@
 # Plan de implementación — Crypto Bank Vault (Módulo 02)
+> 🇬🇧 [English version](./00-plan-implementacion-EN.md)
 
 Documento maestro del módulo. Define fases, entregables, criterios de aceptación y el stack acordado para contratos + frontend de demostración en servidor Google.
 
@@ -54,9 +55,9 @@ Next.js App (ethers.js v6)  ──RPC──►  Nodo / Anvil / Testnet
 
 Diagramas detallados:
 
-- [Diagrama de clases](./01-diagrama-clases.md)
-- [Diagrama de flujo](./02-diagrama-flujo.md)
-- [Flujograma](./03-flujograma.md)
+- [Diagrama de clases](./01-diagrama-clases-ES.md)
+- [Diagrama de flujo](./02-diagrama-flujo-ES.md)
+- [Flujograma](./03-flujograma-ES.md)
 
 ---
 
@@ -231,7 +232,7 @@ Diagramas detallados:
 
 **Criterio de salida:** URL pública de muestra estable; README de operación (arranque, logs, redeploy).
 
-**Entregables en repo:** [`doc/VPS.md`](./VPS.md) + [`deploy/vps/`](../deploy/vps/) (PM2, Nginx, systemd, `setup.sh`). La URL pública se obtiene al aplicar el playbook en tu VM Google.
+**Entregables en repo:** [`doc/VPS-ES.md`](./VPS-ES.md) + [`deploy/vps/`](../deploy/vps/) (PM2, Nginx, systemd, `setup.sh`). La URL pública se obtiene al aplicar el playbook en tu VM Google.
 
 ---
 
@@ -246,7 +247,7 @@ Diagramas detallados:
 
 **Criterio de salida:** demo usable por un tercero siguiendo solo `doc/` + README.
 
-**Entregables:** [`README.md`](../README.md), [`HANDOFF.md`](./HANDOFF.md), [`MEJORAS.md`](./MEJORAS.md), diagramas y limitaciones alineados.
+**Entregables:** [`README-ES.md`](../README-ES.md), [`HANDOFF-ES.md`](./HANDOFF-ES.md), [`MEJORAS-ES.md`](./MEJORAS-ES.md), diagramas y limitaciones alineados.
 
 ---
 
@@ -258,7 +259,7 @@ Diagramas detallados:
 [x] Fase 2  Vault completo + reentrancy/fuzz/invariant
 [x] Fase 3  Deploy scripts + ABI export
 [x] Fase 4  Frontend Next.js + ethers v6
-[x] Fase 5  Deploy VPS Google (artefactos + doc/VPS.md; URL pública = aplicar en tu VM)
+[x] Fase 5  Deploy VPS Google (artefactos + doc/VPS-ES.md; URL pública = aplicar en tu VM)
 [x] Fase 6  Docs finales + handoff
 ```
 
@@ -314,6 +315,6 @@ NEXT_PUBLIC_ASSETS=ETH:native,mUSD:0x...:18
 
 **Estado:** Fases **0–6** cerradas en el repo.
 
-Para una demo pública: aplicar [`VPS.md`](./VPS.md) en la VM Google.  
-Para un tercero local: seguir [`HANDOFF.md`](./HANDOFF.md).  
-Roadmap opcional: [`MEJORAS.md`](./MEJORAS.md).
+Para una demo pública: aplicar [`VPS-ES.md`](./VPS-ES.md) en la VM Google.  
+Para un tercero local: seguir [`HANDOFF-ES.md`](./HANDOFF-ES.md).  
+Roadmap opcional: [`MEJORAS-ES.md`](./MEJORAS-ES.md).

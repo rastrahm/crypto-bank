@@ -28,7 +28,7 @@ contract EthForcedSender {
 }
 
 /// @title CryptoBankVaultAttackTest
-/// @notice Campañas defensivas A–E (SWC) adaptadas al vault. Ver `doc/ATAQUES.md`.
+/// @notice Campañas defensivas A–E (SWC) adaptadas al vault. Ver `doc/ATAQUES-ES.md`.
 contract CryptoBankVaultAttackTest is Test {
     CryptoBankVault internal vault;
     MockERC20 internal token;

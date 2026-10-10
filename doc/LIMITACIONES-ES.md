@@ -1,6 +1,7 @@
 # Limitaciones conocidas — CryptoBankVault
+> 🇬🇧 [English version](./LIMITACIONES-EN.md)
 
-Decisiones de diseño **aceptadas** (no son bugs abiertos). Complementa [`SWC-AUDIT.md`](./SWC-AUDIT.md) y [`DEPLOY.md`](./DEPLOY.md).
+Decisiones de diseño **aceptadas** (no son bugs abiertos). Complementa [`SWC-AUDIT-ES.md`](./SWC-AUDIT-ES.md) y [`DEPLOY-ES.md`](./DEPLOY-ES.md).
 
 ---
 
@@ -14,7 +15,7 @@ Decisiones de diseño **aceptadas** (no son bugs abiertos). Complementa [`SWC-AU
 
 - No hace falta (o no conviene) un mock con `mint` público.
 - Usar tokens reales ya desplegados y allowlistarlos con cuidado.
-- `INITIAL_OWNER` = multisig / timelock (ver [`DEPLOY.md`](./DEPLOY.md)).
+- `INITIAL_OWNER` = multisig / timelock (ver [`DEPLOY-ES.md`](./DEPLOY-ES.md)).
 
 ---
 

@@ -1,6 +1,7 @@
 # Flujograma — Crypto Bank Vault
+> 🇬🇧 [English version](./03-flujograma-EN.md)
 
-Diagramas de decisión (sí/no) para las operaciones críticas del vault y del frontend. Ver también el [diagrama de flujo / secuencias](./02-diagrama-flujo.md).
+Diagramas de decisión (sí/no) para las operaciones críticas del vault y del frontend. Ver también el [diagrama de flujo / secuencias](./02-diagrama-flujo-ES.md).
 
 ---
 
@@ -29,7 +30,7 @@ flowchart TD
     K -->|Sí| O
     J --> P{Contrato: paused?}
     O --> P
-    P -->|Sí| Q[Revert / EnPaused]
+    P -->|Sí| Q[Revert / EnforcedPause]
     Q --> R([Fin con error])
     P -->|No| S{amount > 0 on-chain?}
     S -->|No| T[Revert ZeroAmount]
@@ -54,7 +55,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A([Inicio: withdrawETH]) --> B{paused?}
-    B -->|Sí| C[Revert EnPaused]
+    B -->|Sí| C[Revert EnforcedPause]
     C --> Z([Fin error])
     B -->|No| D{ReentrancyGuard libre?}
     D -->|No| E[Revert ReentrancyGuard]
@@ -135,7 +136,7 @@ flowchart TD
     B -->|No| C[Revert OwnableUnauthorized]
     C --> Z([Fin error])
     B -->|Sí| D{¿Ya paused?}
-    D -->|Sí| E[Revert EnPaused / no-op según OZ]
+    D -->|Sí| E[Revert EnforcedPause / no-op según OZ]
     E --> Z
     D -->|No| F[_pause]
     F --> G[Emit Paused / EmergencyPaused]

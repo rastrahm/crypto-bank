@@ -5,7 +5,7 @@ Next.js 15 (App Router) + ethers.js v6 + Zod.
 ## Requisitos
 
 - Node.js **>= 20**
-- Vault y mock desplegados (ver `../doc/DEPLOY.md`)
+- Vault y mock desplegados (ver `../doc/DEPLOY-ES.md`)
 - ABIs en `abi/` (`../script/export-abi.sh`)
 
 ## Setup
@@ -50,4 +50,4 @@ Formato: `SYM:native[:decimals]` o `SYM:0xAddress[:decimals]`. Si omitís decima
 
 ## Producción / VPS
 
-Ver [`../doc/VPS.md`](../doc/VPS.md). Plantilla: `.env.production.example` → `.env.production` **antes** de `npm run build`.
+Ver [`../doc/VPS-ES.md`](../doc/VPS-ES.md). Plantilla: `.env.production.example` → `.env.production` **antes** de `npm run build`.

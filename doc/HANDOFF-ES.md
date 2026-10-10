@@ -1,4 +1,5 @@
 # Handoff — Crypto Bank Vault
+> 🇬🇧 [English version](./HANDOFF-EN.md)
 
 Guía corta para que un tercero levante la demo **solo** con este repo (sin contexto de chat).
 
@@ -76,8 +77,8 @@ Abrí http://localhost:3000
 
 ## Producción / VPS
 
-1. Deploy contratos en testnet ([`DEPLOY.md`](./DEPLOY.md)).  
-2. Seguir [`VPS.md`](./VPS.md) (env de build, PM2, Nginx).  
+1. Deploy contratos en testnet ([`DEPLOY-ES.md`](./DEPLOY-ES.md)).  
+2. Seguir [`VPS-ES.md`](./VPS-ES.md) (env de build, PM2, Nginx).  
 
 ---
 
@@ -86,7 +87,7 @@ Abrí http://localhost:3000
 | Tema | Realidad |
 |------|----------|
 | Login firmado | UX demo local; no auth de servidor |
-| Mainnet con valor | Fuera de alcance; ver disclaimer + [`LIMITACIONES.md`](./LIMITACIONES.md) |
+| Mainnet con valor | Fuera de alcance; ver disclaimer + [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md) |
 | URL pública | Hay que desplegar en tu VM |
 
 ---
@@ -95,7 +96,7 @@ Abrí http://localhost:3000
 
 | Si necesitás… | Abrí… |
 |---------------|--------|
-| Límites del diseño | [`LIMITACIONES.md`](./LIMITACIONES.md) |
-| Ataques / SWC | [`ATAQUES.md`](./ATAQUES.md), [`SWC-AUDIT.md`](./SWC-AUDIT.md) |
-| Mejoras futuras | [`MEJORAS.md`](./MEJORAS.md) |
-| Gas | [`GAS.md`](./GAS.md) |
+| Límites del diseño | [`LIMITACIONES-ES.md`](./LIMITACIONES-ES.md) |
+| Ataques / SWC | [`ATAQUES-ES.md`](./ATAQUES-ES.md), [`SWC-AUDIT-ES.md`](./SWC-AUDIT-ES.md) |
+| Mejoras futuras | [`MEJORAS-ES.md`](./MEJORAS-ES.md) |
+| Gas | [`GAS-ES.md`](./GAS-ES.md) |
